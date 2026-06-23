@@ -1,0 +1,59 @@
+# Render Blueprint — deploys both services in one go.
+# In the Render Dashboard: New > Blueprint > connect this repo.
+# Docs: https://render.com/docs/infrastructure-as-code
+#
+# The database itself is NOT defined here — this project already has a
+# Supabase Postgres project ("roadfund") with the schema applied and demo
+# data seeded. Grab its connection string from Project Settings > Database
+# > Connection string ("Direct connection") and paste it into DATABASE_URL
+# when prompted during Blueprint creation. See the main README's
+# "Deploying to Production" section for the full walkthrough.
+
+services:
+  # ── Backend: Node/Express API ──────────────────────────────────
+  - type: web
+    name: roadfund-backend
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false   # paste your Neon connection string here (include ?sslmode=require)
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: MAX_FILE_SIZE
+        value: 10485760
+      # Predicted from the frontend service name below. Render usually
+      # assigns exactly https://<name>.onrender.com — if it picked a
+      # different subdomain (e.g. due to a name clash), update this
+      # value in the Render dashboard and redeploy.
+      - key: ALLOWED_ORIGINS
+        value: https://roadfund-frontend.onrender.com
+
+  # ── Frontend: React/Vite static site ────────────────────────────
+  - type: web
+    name: roadfund-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      # Same prediction caveat as ALLOWED_ORIGINS above — if Render
+      # renamed the backend service's subdomain, update this and
+      # trigger a manual redeploy (static sites bake env vars in at
+      # build time, so changing this requires a rebuild).
+      - key: VITE_API_URL
+        value: https://roadfund-backend.onrender.com/api
+    routes:
+      # SPA fallback so React Router's client-side routes
+      # (e.g. /dashboard/reports/5) don't 404 on refresh.
+      - type: rewrite
+        source: /*
+        destination: /index.html
