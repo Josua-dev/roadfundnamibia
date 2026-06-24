@@ -1,7 +1,8 @@
-import React from 'react';
-import { AlertTriangle, CheckCircle, Info, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { AlertTriangle, CheckCircle, Info, X, Paperclip, Download } from 'lucide-react';
 import { severityConfig, statusConfig, taskStatusConfig, priorityConfig } from '../../utils/helpers';
 import { Severity, ReportStatus, TaskStatus, TaskPriority } from '../../types';
+import api from '../../utils/api';
 
 /* ════════════════════════════════════════════════════════════
    These are intentionally NOT one universal "Card" reused for
@@ -184,3 +185,50 @@ export const FilterGroup = ({ label, children }: { label: string; children: Reac
     {children}
   </div>
 );
+
+/* ── Attachment thumbnail — uploaded report photos are served from
+   a route that requires Authorization: Bearer <token>. A plain
+   <img src> or <a href> can't attach that header at all, so this
+   fetches the file through the authenticated api client and renders
+   it as a blob URL instead. Also normalizes file_path: it's stored
+   API-relative (e.g. "/uploads/x.jpg" or legacy "/api/uploads/x.jpg"),
+   not as a full URL, so it has to go through the api client (which
+   knows the real backend origin) rather than being used directly. ── */
+export const AttachmentThumb = ({ filePath, fileName, mimeType }: { filePath: string; fileName: string; mimeType?: string }) => {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    const path = filePath.replace(/^\/api(?=\/)/, ''); // strip a legacy "/api" prefix if present
+    api.get(path, { responseType: 'blob' })
+      .then((res) => { objectUrl = URL.createObjectURL(res.data); setBlobUrl(objectUrl); })
+      .catch(() => setFailed(true));
+    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
+  }, [filePath]);
+
+  const isImage = mimeType?.startsWith('image/');
+
+  if (failed) {
+    return (
+      <div style={{ padding: 14, background: 'var(--n-25)', display: 'flex', alignItems: 'center', gap: 6, borderRadius: 'var(--r-tight)', border: '1px solid var(--line)' }}>
+        <AlertTriangle size={13} /><span style={{ fontSize: '0.76rem' }}>Could not load {fileName}</span>
+      </div>
+    );
+  }
+
+  if (!blobUrl) {
+    return <div style={{ aspectRatio: '4/3', borderRadius: 'var(--r-tight)', background: 'var(--n-25)', border: '1px solid var(--line)' }} />;
+  }
+
+  return (
+    <a href={blobUrl} download={fileName} target="_blank" rel="noreferrer" style={{ display: 'block', borderRadius: 'var(--r-tight)', overflow: 'hidden', border: '1px solid var(--line)', position: 'relative' }}>
+      {isImage
+        ? <img src={blobUrl} alt={fileName} style={{ width: '100%', aspectRatio: '4/3', objectFit: 'cover' }} />
+        : <div style={{ padding: 14, background: 'var(--n-25)', display: 'flex', alignItems: 'center', gap: 6 }}><Paperclip size={13} /><span style={{ fontSize: '0.76rem' }}>{fileName}</span></div>}
+      <div style={{ position: 'absolute', bottom: 4, right: 4, background: 'rgba(0,0,0,0.55)', borderRadius: 4, padding: 3, display: 'flex' }}>
+        <Download size={11} style={{ color: 'white' }} />
+      </div>
+    </a>
+  );
+};

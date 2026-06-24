@@ -5,7 +5,7 @@ import { ArrowLeft, MapPin, Calendar, User, Paperclip, CheckCircle, Wrench } fro
 import api from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import { Report, ReportStatus } from '../types';
-import { Panel, PanelHeader, StatusTag, SeverityTag, Meter, Skel, Notice } from '../components/common';
+import { Panel, PanelHeader, StatusTag, SeverityTag, Meter, Skel, Notice, AttachmentThumb } from '../components/common';
 import { formatDateTime, timeAgo, issueTypeConfig, statusConfig } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
@@ -97,11 +97,7 @@ export default function ReportDetail() {
               <PanelHeader title={`Attachments (${data.attachments.length})`} />
               <div className="panel-body" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
                 {data.attachments.map((att: any) => (
-                  <a key={att.id} href={att.file_path} target="_blank" rel="noreferrer" style={{ display: 'block', borderRadius: 'var(--r-tight)', overflow: 'hidden', border: '1px solid var(--line)' }}>
-                    {att.mime_type?.startsWith('image/')
-                      ? <img src={att.file_path} alt={att.file_name} style={{ width: '100%', aspectRatio: '4/3', objectFit: 'cover' }} />
-                      : <div style={{ padding: 14, background: 'var(--n-25)', display: 'flex', alignItems: 'center', gap: 6 }}><Paperclip size={13} /><span style={{ fontSize: '0.76rem' }}>{att.file_name}</span></div>}
-                  </a>
+                  <AttachmentThumb key={att.id} filePath={att.file_path} fileName={att.file_name} mimeType={att.mime_type} />
                 ))}
               </div>
             </Panel>
