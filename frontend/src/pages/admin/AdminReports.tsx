@@ -93,7 +93,8 @@ export default function AdminReports() {
           {isLoading ? <div style={{ padding: 18 }}><Skel rows={9} height={38} /></div> : !reports.length ? (
             <Empty icon={FileText} title="No matching records" description="Adjust the filters in the left rail." />
           ) : (
-            <table className="dtable">
+            <div style={{ overflowX: 'auto' }}>
+            <table className="dtable" style={{ minWidth: 760 }}>
               <thead><tr><th>Report #</th><th>Title</th><th>Type</th><th>Severity</th><th>Region</th><th>Filed</th><th>Status</th><th></th></tr></thead>
               <tbody>
                 {reports.map(r => (
@@ -122,6 +123,7 @@ export default function AdminReports() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
           <div className="panel-body" style={{ paddingTop: 0 }}>
             <Pager page={page} pages={pagination?.pages || 1} onPage={setPage} />

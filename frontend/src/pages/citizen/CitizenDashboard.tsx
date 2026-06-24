@@ -19,12 +19,12 @@ export default function CitizenDashboard() {
 
   const { data: stats } = useQuery({
     queryKey: ['citizen-stats'],
-    queryFn: async () => (await api.get('/reports/my-stats')).data.data,
+    queryFn: async () => (await api.get('/analytics/citizen-stats')).data.data,
   });
 
   const { data: reportsData, isLoading } = useQuery({
     queryKey: ['my-reports-recent'],
-    queryFn: async () => (await api.get('/reports/my-reports?limit=6')).data,
+    queryFn: async () => (await api.get('/reports?limit=6')).data,
   });
   const reports = reportsData?.data || [];
 

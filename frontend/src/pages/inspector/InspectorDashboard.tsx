@@ -42,7 +42,8 @@ export default function InspectorDashboard() {
           {pendingLoading ? <div style={{ padding: 16 }}><Skel rows={6} height={42} /></div> : !pending?.length ? (
             <Empty icon={CheckCircle} title="Queue is clear" description="Nothing is waiting for inspection right now." />
           ) : (
-            <table className="dtable dtable-compact">
+            <div style={{ overflowX: 'auto' }}>
+            <table className="dtable dtable-compact" style={{ minWidth: 520 }}>
               <thead><tr><th></th><th>Report</th><th>Region</th><th>Severity</th><th style={{ textAlign: 'right' }}>Waiting</th></tr></thead>
               <tbody>
                 {pending.map((r: any) => (
@@ -59,6 +60,7 @@ export default function InspectorDashboard() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </Panel>
 

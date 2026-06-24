@@ -43,7 +43,7 @@ exports.getAllReports = async (req, res) => {
     const {
       status, severity, region_id, issue_type,
       search, page = 1, limit = 10,
-      sort_by = 'created_at', sort_dir = 'DESC'
+      sort_by = 'created_at', sort_dir, sort_order
     } = req.query;
 
     let where = ['1=1'];
@@ -75,7 +75,7 @@ exports.getAllReports = async (req, res) => {
 
     const allowedSort = ['created_at', 'severity', 'status', 'title'];
     const safeSort = allowedSort.includes(sort_by) ? sort_by : 'created_at';
-    const safeDir = sort_dir === 'ASC' ? 'ASC' : 'DESC';
+    const safeDir = (sort_order || sort_dir || 'DESC').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
     const limitParams = [...params, parseInt(limit), offset];
     const reports = await pool.query(
@@ -107,6 +107,9 @@ exports.getAllReports = async (req, res) => {
 
 // ── GET SINGLE REPORT ─────────────────────────────────────────
 exports.getReport = async (req, res) => {
+  if (!/^\d+$/.test(req.params.id)) {
+    return res.status(400).json({ success: false, message: 'Invalid report ID' });
+  }
   try {
     const reports = await pool.query(
       `SELECT r.*,
@@ -234,6 +237,9 @@ exports.createReport = async (req, res) => {
 
 // ── UPDATE REPORT STATUS ──────────────────────────────────────
 exports.updateStatus = async (req, res) => {
+  if (!/^\d+$/.test(req.params.id)) {
+    return res.status(400).json({ success: false, message: 'Invalid report ID' });
+  }
   try {
     const { status, notes, assigned_to, progress_percent } = req.body;
     const reportId = req.params.id;
@@ -277,6 +283,9 @@ exports.updateStatus = async (req, res) => {
 
 // ── DELETE REPORT ─────────────────────────────────────────────
 exports.deleteReport = async (req, res) => {
+  if (!/^\d+$/.test(req.params.id)) {
+    return res.status(400).json({ success: false, message: 'Invalid report ID' });
+  }
   try {
     const existing = await pool.query('SELECT * FROM reports WHERE id = $1', [req.params.id]);
     if (!existing.rows.length) return res.status(404).json({ success: false, message: 'Report not found' });

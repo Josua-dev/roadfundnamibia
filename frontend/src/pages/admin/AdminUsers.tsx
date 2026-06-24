@@ -103,7 +103,8 @@ export default function AdminUsers() {
           {isLoading ? <div style={{ padding: 18 }}><Skel rows={8} height={38} /></div> : !users.length ? (
             <Empty icon={Users} title="No matching users" description="Try a different search or clear your filters." />
           ) : (
-            <table className="dtable">
+            <div style={{ overflowX: 'auto' }}>
+            <table className="dtable" style={{ minWidth: 760 }}>
               <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Region</th><th>Reports</th><th>Joined</th><th>Status</th><th></th></tr></thead>
               <tbody>
                 {users.map(u => (
@@ -124,6 +125,7 @@ export default function AdminUsers() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
           <div className="panel-body" style={{ paddingTop: 0 }}>
             <Pager page={page} pages={pagination?.pages || 1} onPage={setPage} />

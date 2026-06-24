@@ -13,11 +13,11 @@ import { formatDate, truncate } from '../../utils/helpers';
 export default function MaintenanceDashboard() {
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['maintenance-stats'],
-    queryFn: async () => (await api.get('/maintenance/my-stats')).data.data,
+    queryFn: async () => (await api.get('/analytics/maintenance-stats')).data.data,
   });
   const { data: tasks, isLoading: tasksLoading } = useQuery({
     queryKey: ['my-tasks'],
-    queryFn: async () => (await api.get('/maintenance/my-tasks?limit=20')).data.data,
+    queryFn: async () => (await api.get('/maintenance?limit=20')).data.data,
   });
 
   const urgent = (tasks || []).filter((t: any) => t.priority === 'urgent');

@@ -166,11 +166,16 @@ export default function SubmitReport() {
             </>
           )}
         </div>
-        <div className="panel-foot">
-          {step > 1 && <button onClick={() => setStep(step - 1)} className="btn-std">Back</button>}
-          {step < 3
-            ? <button onClick={() => setStep(step + 1)} disabled={step === 1 && (!form.title || !form.issue_type)} className="btn btn-cta">Next</button>
-            : <button onClick={handleSubmit} disabled={loading || !form.region_id} className="btn btn-cta">{loading ? 'Submitting…' : 'Submit Report'}</button>}
+        <div className="panel-foot" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+          {step === 3 && !form.region_id && (
+            <p style={{ color: 'var(--error)', fontSize: '0.78rem', margin: 0 }}>Select a region in Step 2 before submitting.</p>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            {step > 1 && <button onClick={() => setStep(step - 1)} className="btn-std">Back</button>}
+            {step < 3
+              ? <button onClick={() => setStep(step + 1)} disabled={step === 1 && (!form.title || !form.issue_type)} className="btn btn-cta">Next</button>
+              : <button onClick={handleSubmit} disabled={loading || !form.region_id} className="btn btn-cta">{loading ? 'Submitting…' : 'Submit Report'}</button>}
+          </div>
         </div>
       </Panel>
     </div>

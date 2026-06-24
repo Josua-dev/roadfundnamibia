@@ -103,6 +103,9 @@ exports.createTask = async (req, res) => {
 
 // ── UPDATE TASK PROGRESS ──────────────────────────────────────
 exports.updateTask = async (req, res) => {
+  if (!/^\d+$/.test(req.params.id)) {
+    return res.status(400).json({ success: false, message: 'Invalid task ID' });
+  }
   try {
     const { progress_percent, status, notes, actual_cost, actual_completion } = req.body;
     const taskId = req.params.id;
@@ -149,6 +152,9 @@ exports.updateTask = async (req, res) => {
 
 // ── GET SINGLE TASK ───────────────────────────────────────────
 exports.getTask = async (req, res) => {
+  if (!/^\d+$/.test(req.params.id)) {
+    return res.status(400).json({ success: false, message: 'Invalid task ID' });
+  }
   try {
     const tasks = await pool.query(
       `SELECT mt.*,

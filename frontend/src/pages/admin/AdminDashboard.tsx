@@ -112,7 +112,8 @@ export default function AdminDashboard() {
         {reportsLoading ? <div style={{ padding: 18 }}><Skel rows={5} height={36} /></div> : !recentReports?.length ? (
           <div className="empty"><div className="empty-icon"><FileText size={20} /></div>No recent reports.</div>
         ) : (
-          <table className="dtable dtable-compact">
+          <div style={{ overflowX: 'auto' }}>
+          <table className="dtable dtable-compact" style={{ minWidth: 640 }}>
             <thead><tr><th>Report</th><th>Type</th><th>Severity</th><th>Status</th><th>Region</th><th style={{ textAlign: 'right' }}>Submitted</th></tr></thead>
             <tbody>
               {recentReports.map((r: any) => (
@@ -130,6 +131,7 @@ export default function AdminDashboard() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Panel>
 
