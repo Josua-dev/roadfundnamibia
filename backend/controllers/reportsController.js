@@ -178,6 +178,13 @@ exports.createReport = async (req, res) => {
 
     const { title, description, issue_type, severity, region_id, latitude, longitude, address } = req.body;
 
+    if (!title?.trim() || !description?.trim() || !issue_type || !region_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Title, description, issue type, and region are all required',
+      });
+    }
+
     // Race-condition-safe report number generation (inside transaction)
     const report_number = await generateReportNumber(client);
 

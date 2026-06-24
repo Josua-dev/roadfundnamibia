@@ -110,7 +110,7 @@ export default function SubmitReport() {
                 </div>
               </div>
               <div className="field">
-                <label className="field-label">Description</label>
+                <label className="field-label">Description <span style={{ color: 'var(--error)' }}>*</span></label>
                 <textarea className="input" rows={4} value={form.description} onChange={set('description')} placeholder="Describe the issue — size, danger level, duration…" />
               </div>
             </>
@@ -173,7 +173,7 @@ export default function SubmitReport() {
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             {step > 1 && <button onClick={() => setStep(step - 1)} className="btn-std">Back</button>}
             {step < 3
-              ? <button onClick={() => setStep(step + 1)} disabled={step === 1 && (!form.title || !form.issue_type)} className="btn btn-cta">Next</button>
+              ? <button onClick={() => setStep(step + 1)} disabled={step === 1 && (!form.title || !form.issue_type || !form.description.trim())} className="btn btn-cta">Next</button>
               : <button onClick={handleSubmit} disabled={loading || !form.region_id} className="btn btn-cta">{loading ? 'Submitting…' : 'Submit Report'}</button>}
           </div>
         </div>
