@@ -2,7 +2,7 @@ import { Outlet, NavLink, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../utils/api';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   LayoutDashboard, FileText, Map, BarChart3, Bell, User, LogOut,
   Plus, Users, Wrench, ClipboardCheck, Menu, X,
@@ -90,6 +90,16 @@ function Mark({ size = 32 }: { size?: number }) {
 export default function DashboardLayout() {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const mainRef = useRef<HTMLElement>(null);
+
+  // `<main>` is its own scroll container (overflowY: auto below), so the
+  // browser's native behavior of resetting scroll on navigation never
+  // applies to it -- without this, navigating away from a long page
+  // (or one that fills the viewport, like the map) while scrolled down
+  // can make the next page look like it didn't load: it's rendered
+  // correctly, just starting from wherever the old page's scroll
+  // position happened to be.
+  useEffect(() => { mainRef.current?.scrollTo(0, 0); }, [location.pathname]);
   const [mobileOpen, setMobileOpen] = useState(false);
   const groups = NAV_GROUPS[user?.role || 'citizen'];
 
@@ -183,7 +193,7 @@ export default function DashboardLayout() {
           </NavLink>
         </header>
 
-        <main style={{ flex: 1, overflowY: 'auto', padding: '22px 26px' }}>
+        <main ref={mainRef} style={{ flex: 1, overflowY: 'auto', padding: '22px 26px' }}>
           <div style={{ maxWidth: 1240, margin: '0 auto' }}><Outlet /></div>
         </main>
       </div>

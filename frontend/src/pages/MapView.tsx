@@ -30,15 +30,27 @@ export default function MapView() {
 
   useEffect(() => {
     if (!mapRef.current || leafletMap.current) return;
+    let cancelled = false;
     (async () => {
-      L = await import('leaflet');
+      const mod = await import('leaflet');
+      // The user may have already navigated away while that chunk was
+      // loading -- bail out instead of initializing a map into a ref
+      // that no longer points at a mounted, attached DOM node.
+      if (cancelled || !mapRef.current) return;
+      L = mod;
       leafletMap.current = L.map(mapRef.current, { center: [-22.5597, 17.0832], zoom: 6, zoomControl: false });
       L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap © CARTO', subdomains: 'abcd', maxZoom: 19 }).addTo(leafletMap.current);
       L.control.zoom({ position: 'bottomright' }).addTo(leafletMap.current);
       markersLayer.current = L.layerGroup().addTo(leafletMap.current);
+      // Flexbox containers can still report 0 height on first measurement;
+      // re-measure once the layout has actually settled.
+      requestAnimationFrame(() => leafletMap.current?.invalidateSize());
       setMapReady(true);
     })();
-    return () => { if (leafletMap.current) { leafletMap.current.remove(); leafletMap.current = null; } };
+    return () => {
+      cancelled = true;
+      if (leafletMap.current) { leafletMap.current.remove(); leafletMap.current = null; }
+    };
   }, []);
 
   useEffect(() => {
