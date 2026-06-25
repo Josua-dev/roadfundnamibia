@@ -1,10 +1,12 @@
 import { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useDropzone } from 'react-dropzone';
 import { Upload, X, MapPin, CheckCircle, AlertTriangle, Construction, Zap, Navigation, Layers } from 'lucide-react';
 import api from '../../utils/api';
 import { useRegions } from '../../hooks/useRegions';
 import { Panel, Notice } from '../../components/common';
+import { timeAgo, statusConfig } from '../../utils/helpers';
 import toast from 'react-hot-toast';
 
 const ISSUE_TYPES = [
@@ -56,6 +58,15 @@ export default function SubmitReport() {
     finally { setLoading(false); }
   };
   const set = (k: string) => (e: any) => setForm(f => ({ ...f, [k]: e.target.value }));
+
+  // Surface possibly-duplicate reports on the review step, once there's
+  // a location to check against. Non-blocking -- just informs the
+  // citizen so they can decide whether this is genuinely a new issue.
+  const { data: nearby } = useQuery({
+    queryKey: ['nearby-reports', form.latitude, form.longitude, form.issue_type],
+    queryFn: async () => (await api.get('/reports/nearby', { params: { lat: form.latitude, lng: form.longitude, issue_type: form.issue_type } })).data.data,
+    enabled: step === 3 && !!form.latitude && !!form.longitude && !!form.issue_type,
+  });
 
   if (submitted) {
     return (
@@ -142,6 +153,22 @@ export default function SubmitReport() {
 
           {step === 3 && (
             <>
+              {nearby && nearby.length > 0 && (
+                <div style={{ marginBottom: 14 }}>
+                  <Notice type="warning" message={`We found ${nearby.length} similar report${nearby.length > 1 ? 's' : ''} already nearby — you can still submit if this is a different issue.`} />
+                  <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {nearby.map((r: any) => (
+                      <Link key={r.id} to={`/dashboard/reports/${r.id}`} target="_blank" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 11px', borderRadius: 'var(--r-tight)', border: '1px solid var(--line)', textDecoration: 'none', fontSize: '0.8rem' }}>
+                        <span style={{ fontWeight: 500, color: 'var(--text-1)' }}>{r.title}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span className={`tag ${statusConfig[r.status as keyof typeof statusConfig]?.tag}`}>{statusConfig[r.status as keyof typeof statusConfig]?.label}</span>
+                          <span className="text-meta">{Math.round(r.distance_m)}m away · {timeAgo(r.created_at)}</span>
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div {...getRootProps()} style={{ border: `1.5px dashed ${isDragActive ? 'var(--secondary)' : 'var(--line-strong)'}`, borderRadius: 'var(--r-base)', padding: 28, textAlign: 'center', cursor: 'pointer', background: isDragActive ? 'var(--secondary-100)' : 'var(--n-25)' }}>
                 <input {...getInputProps()} />
                 <Upload size={26} style={{ color: 'var(--text-3)', marginBottom: 8 }} />

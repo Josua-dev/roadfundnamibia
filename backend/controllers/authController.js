@@ -2,22 +2,13 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const pool = require('../config/database');
+const { auditLog } = require('../utils/auditLog');
 
 // Helper: generate JWT
 const generateToken = (userId) =>
   jwt.sign({ userId }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   });
-
-// Helper: log audit
-const auditLog = async (userId, action, entityType, entityId, ip) => {
-  try {
-    await pool.query(
-      'INSERT INTO audit_logs (user_id, action, entity_type, entity_id, ip_address) VALUES ($1, $2, $3, $4, $5)',
-      [userId, action, entityType, entityId, ip]
-    );
-  } catch (_) {}
-};
 
 // ── REGISTER ─────────────────────────────────────────────────
 exports.register = async (req, res) => {

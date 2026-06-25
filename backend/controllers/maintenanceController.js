@@ -1,5 +1,6 @@
 const pool = require('../config/database');
 const { buildSetClause } = require('../utils/sqlHelpers');
+const { auditLog } = require('../utils/auditLog');
 
 // ── GET ALL TASKS ─────────────────────────────────────────────
 exports.getAllTasks = async (req, res) => {
@@ -94,6 +95,7 @@ exports.createTask = async (req, res) => {
       );
     }
 
+    auditLog(req.user.id, 'CREATE_TASK', 'maintenance_tasks', result.rows[0].id, req.ip);
     res.status(201).json({ success: true, message: 'Task created', data: { id: result.rows[0].id } });
   } catch (error) {
     console.error('createTask error:', error);
@@ -144,6 +146,7 @@ exports.updateTask = async (req, res) => {
       );
     }
 
+    auditLog(req.user.id, 'UPDATE_TASK', 'maintenance_tasks', parseInt(taskId), req.ip);
     res.json({ success: true, message: 'Task updated' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Update failed' });

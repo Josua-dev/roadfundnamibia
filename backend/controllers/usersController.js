@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const pool = require('../config/database');
+const { auditLog } = require('../utils/auditLog');
 
 // ── GET ALL USERS ─────────────────────────────────────────────
 exports.getAllUsers = async (req, res) => {
@@ -64,6 +65,7 @@ exports.createUser = async (req, res) => {
       [full_name, email, password_hash, role, region_id || null, phone || null]
     );
 
+    auditLog(req.user.id, `CREATE_USER:${role}`, 'users', result.rows[0].id, req.ip);
     res.status(201).json({ success: true, message: 'User created', data: { id: result.rows[0].id } });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to create user' });
@@ -81,6 +83,7 @@ exports.updateUser = async (req, res) => {
       [full_name, email, role, region_id || null, phone || null, is_active, userId]
     );
 
+    auditLog(req.user.id, 'UPDATE_USER', 'users', parseInt(userId), req.ip);
     res.json({ success: true, message: 'User updated' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Update failed' });
@@ -96,6 +99,7 @@ exports.toggleStatus = async (req, res) => {
     const newStatus = !users.rows[0].is_active;
     await pool.query('UPDATE users SET is_active = $1, updated_at = NOW() WHERE id = $2', [newStatus, req.params.id]);
 
+    auditLog(req.user.id, `TOGGLE_USER_STATUS:${newStatus ? 'active' : 'inactive'}`, 'users', parseInt(req.params.id), req.ip);
     res.json({ success: true, message: `User ${newStatus ? 'activated' : 'deactivated'}` });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Status toggle failed' });
@@ -109,6 +113,7 @@ exports.resetPassword = async (req, res) => {
     const salt = await bcrypt.genSalt(12);
     const hash = await bcrypt.hash(new_password, salt);
     await pool.query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2', [hash, req.params.id]);
+    auditLog(req.user.id, 'RESET_PASSWORD', 'users', parseInt(req.params.id), req.ip);
     res.json({ success: true, message: 'Password reset successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Password reset failed' });

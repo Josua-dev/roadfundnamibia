@@ -20,6 +20,7 @@ import MaintenanceDashboard from './pages/maintenance/MaintenanceDashboard';
 import MaintenanceTaskDetail from './pages/maintenance/MaintenanceTaskDetail';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
+import AdminAuditLog from './pages/admin/AdminAuditLog';
 import AdminReports from './pages/admin/AdminReports';
 
 import ReportDetail from './pages/ReportDetail';
@@ -103,6 +104,9 @@ function App() {
             } />
             <Route path="admin/users" element={
               <ProtectedRoute roles={['admin']}><AdminUsers /></ProtectedRoute>
+            } />
+            <Route path="admin/audit-log" element={
+              <ProtectedRoute roles={['admin']}><AdminAuditLog /></ProtectedRoute>
             } />
             <Route path="admin/reports" element={
               <ProtectedRoute roles={['admin', 'inspector']}><AdminReports /></ProtectedRoute>

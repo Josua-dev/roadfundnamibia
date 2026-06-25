@@ -1,5 +1,6 @@
 const pool = require('../config/database');
 const { buildSetClause } = require('../utils/sqlHelpers');
+const { auditLog } = require('../utils/auditLog');
 
 // Generate report number — race-condition-safe via INSERT ... ON CONFLICT
 // (the report_sequences table is created by database/schema.sql; this
@@ -160,9 +161,18 @@ exports.getReport = async (req, res) => {
       [report.id]
     );
 
+    // Get inspector findings, if any
+    const inspections = await pool.query(
+      `SELECT ir.*, u.full_name AS inspector_name
+       FROM inspection_reports ir
+       JOIN users u ON ir.inspector_id = u.id
+       WHERE ir.report_id = $1 ORDER BY ir.inspection_date DESC`,
+      [report.id]
+    );
+
     res.json({
       success: true,
-      data: { ...report, attachments: attachments.rows, history: history.rows, maintenance_task: tasks.rows[0] || null },
+      data: { ...report, attachments: attachments.rows, history: history.rows, maintenance_task: tasks.rows[0] || null, inspections: inspections.rows },
     });
   } catch (error) {
     console.error('getReport error:', error);
@@ -216,6 +226,8 @@ exports.createReport = async (req, res) => {
     );
 
     await client.query('COMMIT');
+
+    auditLog(req.user.id, 'CREATE_REPORT', 'reports', reportId, req.ip);
 
     // Notifications are fire-and-forget (outside transaction — non-critical)
     pool.query("SELECT id FROM users WHERE role IN ('admin','inspector') AND is_active = true")
@@ -281,6 +293,8 @@ exports.updateStatus = async (req, res) => {
       );
     }
 
+    auditLog(req.user.id, `UPDATE_REPORT_STATUS:${status}`, 'reports', reportId, req.ip);
+
     res.json({ success: true, message: 'Report updated successfully' });
   } catch (error) {
     console.error('updateStatus error:', error);
@@ -303,9 +317,91 @@ exports.deleteReport = async (req, res) => {
     }
 
     await pool.query('DELETE FROM reports WHERE id = $1', [req.params.id]);
+    auditLog(req.user.id, 'DELETE_REPORT', 'reports', parseInt(req.params.id), req.ip);
     res.json({ success: true, message: 'Report deleted' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Delete failed' });
+  }
+};
+
+// ── CREATE INSPECTION (inspector findings) ────────────────────
+exports.createInspection = async (req, res) => {
+  if (!/^\d+$/.test(req.params.id)) {
+    return res.status(400).json({ success: false, message: 'Invalid report ID' });
+  }
+  try {
+    const { findings, recommendation, verified } = req.body;
+
+    if (!findings?.trim()) {
+      return res.status(400).json({ success: false, message: 'Findings are required' });
+    }
+
+    const reportId = req.params.id;
+    const existing = await pool.query('SELECT id, status, reported_by, title FROM reports WHERE id = $1', [reportId]);
+    if (!existing.rows.length) return res.status(404).json({ success: false, message: 'Report not found' });
+    const report = existing.rows[0];
+
+    const result = await pool.query(
+      'INSERT INTO inspection_reports (report_id, inspector_id, findings, recommendation, verified) VALUES ($1, $2, $3, $4, $5) RETURNING id, inspection_date',
+      [reportId, req.user.id, findings.trim(), recommendation?.trim() || null, !!verified]
+    );
+
+    // A verified finding moves an unreviewed report forward -- but never
+    // regresses one that's already further along (e.g. already assigned
+    // or in progress), since this is informational, not a status reset.
+    if (verified && ['reported', 'under_review'].includes(report.status)) {
+      await pool.query("UPDATE reports SET status = 'verified', updated_at = NOW() WHERE id = $1", [reportId]);
+      await pool.query(
+        'INSERT INTO status_history (report_id, old_status, new_status, changed_by, notes) VALUES ($1, $2, $3, $4, $5)',
+        [reportId, report.status, 'verified', req.user.id, 'Verified following inspection']
+      );
+      await pool.query(
+        'INSERT INTO notifications (user_id, title, message, type, report_id) VALUES ($1, $2, $3, $4, $5)',
+        [report.reported_by, 'Report Verified', `Your report "${report.title}" has been verified by an inspector`, 'status_update', reportId]
+      );
+    }
+
+    auditLog(req.user.id, 'CREATE_INSPECTION', 'reports', parseInt(reportId), req.ip);
+
+    res.status(201).json({ success: true, message: 'Inspection findings recorded', data: result.rows[0] });
+  } catch (error) {
+    console.error('createInspection error:', error);
+    res.status(500).json({ success: false, message: 'Failed to record inspection' });
+  }
+};
+
+// ── NEARBY REPORTS (duplicate-detection helper for submission) ─
+exports.getNearbyReports = async (req, res) => {
+  try {
+    const { lat, lng, issue_type, radius_m = 300 } = req.query;
+
+    if (!lat || !lng || !issue_type) {
+      return res.status(400).json({ success: false, message: 'lat, lng, and issue_type are required' });
+    }
+
+    const result = await pool.query(
+      `SELECT * FROM (
+         SELECT r.id, r.report_number, r.title, r.status, r.severity, r.created_at,
+                (6371000 * acos(LEAST(1, GREATEST(-1,
+                  cos(radians($1)) * cos(radians(r.latitude)) * cos(radians(r.longitude) - radians($2)) +
+                  sin(radians($1)) * sin(radians(r.latitude))
+                )))) AS distance_m
+         FROM reports r
+         WHERE r.latitude IS NOT NULL AND r.longitude IS NOT NULL
+           AND r.issue_type = $3
+           AND r.status NOT IN ('completed', 'rejected')
+           AND r.created_at >= NOW() - INTERVAL '180 days'
+       ) nearby
+       WHERE distance_m <= $4
+       ORDER BY distance_m ASC
+       LIMIT 5`,
+      [parseFloat(lat), parseFloat(lng), issue_type, parseFloat(radius_m)]
+    );
+
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error('getNearbyReports error:', error);
+    res.status(500).json({ success: false, message: 'Failed to check nearby reports' });
   }
 };
 

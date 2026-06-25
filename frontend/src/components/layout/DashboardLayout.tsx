@@ -5,7 +5,7 @@ import api from '../../utils/api';
 import { useState, useEffect, useRef } from 'react';
 import {
   LayoutDashboard, FileText, Map, BarChart3, Bell, User, LogOut,
-  Plus, Users, Wrench, ClipboardCheck, Menu, X,
+  Plus, Users, Wrench, ClipboardCheck, Menu, X, History,
 } from 'lucide-react';
 
 /* Nav is grouped into sections per role — not one flat list.
@@ -59,6 +59,7 @@ const NAV_GROUPS: Record<string, { label: string; items: { to: string; icon: any
     { label: 'Manage', items: [
       { to: '/dashboard/admin/users', icon: Users, label: 'Users' },
       { to: '/dashboard/analytics', icon: BarChart3, label: 'Analytics' },
+      { to: '/dashboard/admin/audit-log', icon: History, label: 'Audit Log' },
     ]},
     { label: 'Account', items: [
       { to: '/dashboard/map', icon: Map, label: 'Live Map' },
@@ -71,7 +72,7 @@ const NAV_GROUPS: Record<string, { label: string; items: { to: string; icon: any
 const ROUTE_TITLES: Record<string, string> = {
   citizen: 'Overview', inspector: 'Overview', maintenance: 'My Tasks', admin: 'Overview',
   'submit-report': 'Report an Issue', 'my-reports': 'My Reports', map: 'Live Map',
-  notifications: 'Notifications', profile: 'My Profile', analytics: 'Analytics', reports: 'All Reports', users: 'Users',
+  notifications: 'Notifications', profile: 'My Profile', analytics: 'Analytics', reports: 'All Reports', users: 'Users', 'audit-log': 'Audit Log',
 };
 
 function Mark({ size = 32 }: { size?: number }) {

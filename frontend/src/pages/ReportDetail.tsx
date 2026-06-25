@@ -13,19 +13,32 @@ const STATUS_FLOW: ReportStatus[] = ['reported', 'under_review', 'verified', 'as
 
 export default function ReportDetail() {
   const { id } = useParams<{ id: string }>();
-  const { isStaff, isAdmin } = useAuth();
+  const { isStaff, isAdmin, isInspector } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [statusNote, setStatusNote] = useState('');
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['report', id],
-    queryFn: async () => (await api.get(`/reports/${id}`)).data.data as Report & { attachments: any[]; history: any[]; maintenance_task: any },
+    queryFn: async () => (await api.get(`/reports/${id}`)).data.data as Report & { attachments: any[]; history: any[]; maintenance_task: any; inspections: any[] },
   });
 
   const statusMutation = useMutation({
     mutationFn: async ({ status, notes }: { status: string; notes: string }) => { await api.patch(`/reports/${id}/status`, { status, notes }); },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['report', id] }); toast.success('Status updated'); setStatusNote(''); },
+  });
+
+  const [findings, setFindings] = useState('');
+  const [recommendation, setRecommendation] = useState('');
+  const [verified, setVerified] = useState(false);
+  const inspectionMutation = useMutation({
+    mutationFn: async () => { await api.post(`/reports/${id}/inspections`, { findings, recommendation, verified }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['report', id] });
+      toast.success('Findings recorded');
+      setFindings(''); setRecommendation(''); setVerified(false);
+    },
+    onError: (e: any) => toast.error(e.response?.data?.message || 'Failed to record findings'),
   });
 
   if (isLoading) return <Skel rows={6} height={80} />;
@@ -91,6 +104,55 @@ export default function ReportDetail() {
               </div>
             </div>
           </Panel>
+
+          {(data.inspections?.length > 0 || isInspector || isAdmin) && (
+            <Panel variant="bordered">
+              <PanelHeader title={`Inspector Findings${data.inspections?.length ? ` (${data.inspections.length})` : ''}`} />
+              <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {data.inspections?.map((ins: any) => (
+                  <div key={ins.id} style={{ padding: 12, background: 'var(--n-25)', borderRadius: 'var(--r-tight)', border: '1px solid var(--line)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.83rem' }}>{ins.inspector_name}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {ins.verified && <span className="tag tag-success">Verified</span>}
+                        <span className="text-meta">{timeAgo(ins.inspection_date)}</span>
+                      </div>
+                    </div>
+                    <p style={{ margin: '0 0 6px', fontSize: '0.84rem', color: 'var(--text-1)', lineHeight: 1.6 }}>{ins.findings}</p>
+                    {ins.recommendation && (
+                      <div style={{ fontSize: '0.82rem', color: 'var(--text-2)' }}>
+                        <span style={{ fontWeight: 600 }}>Recommendation: </span>{ins.recommendation}
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {(isInspector || isAdmin) && (
+                  <div style={{ paddingTop: data.inspections?.length ? 4 : 0, borderTop: data.inspections?.length ? '1px solid var(--line)' : 'none' }}>
+                    <div className="field">
+                      <label className="field-label">Findings</label>
+                      <textarea className="input" rows={3} value={findings} onChange={e => setFindings(e.target.value)} placeholder="What did you observe on-site? Measurements, severity, contributing factors…" />
+                    </div>
+                    <div className="field">
+                      <label className="field-label">Recommendation (optional)</label>
+                      <textarea className="input" rows={2} value={recommendation} onChange={e => setRecommendation(e.target.value)} placeholder="What repair approach do you recommend?" />
+                    </div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: '0.83rem', marginBottom: 10, cursor: 'pointer' }}>
+                      <input type="checkbox" checked={verified} onChange={e => setVerified(e.target.checked)} />
+                      Confirm this report as verified
+                    </label>
+                    <button
+                      onClick={() => inspectionMutation.mutate()}
+                      disabled={inspectionMutation.isPending || !findings.trim()}
+                      className="btn btn-cta"
+                    >
+                      {inspectionMutation.isPending ? 'Saving…' : 'Record Findings'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </Panel>
+          )}
 
           {data.attachments?.length > 0 && (
             <Panel variant="bordered">
