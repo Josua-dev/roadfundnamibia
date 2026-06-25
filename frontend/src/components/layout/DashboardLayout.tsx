@@ -163,8 +163,8 @@ export default function DashboardLayout() {
 
       {mobileOpen && (
         <>
-          <div onClick={() => setMobileOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(19,27,36,0.5)', zIndex: 40 }} />
-          <aside style={{ position: 'fixed', left: 0, top: 0, bottom: 0, width: 'var(--sidebar-w)', zIndex: 50 }}><Sidebar /></aside>
+          <div onClick={() => setMobileOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(19,27,36,0.5)', zIndex: 2000 }} />
+          <aside style={{ position: 'fixed', left: 0, top: 0, bottom: 0, width: 'var(--sidebar-w)', zIndex: 2001 }}><Sidebar /></aside>
         </>
       )}
 
