@@ -28,7 +28,7 @@ export default function MaintenanceDashboard() {
   const TaskCard = ({ t }: { t: any }) => {
     const tone = t.progress_percent >= 70 ? 'good' : t.progress_percent >= 30 ? 'warn' : 'bad';
     return (
-      <Link to={`/dashboard/reports/${t.report_id}`} className="panel-bordered" style={{ display: 'block', padding: 13, marginBottom: 9, textDecoration: 'none' }}>
+      <Link to={`/dashboard/maintenance/${t.id}`} className="panel-bordered" style={{ display: 'block', padding: 13, marginBottom: 9, textDecoration: 'none' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 7 }}>
           <span style={{ fontWeight: 600, fontSize: '0.83rem', color: 'var(--text-1)' }}>{truncate(t.title || t.report_title, 34)}</span>
           <TaskStatusTag status={t.status} />

@@ -17,6 +17,7 @@ import MyReports from './pages/citizen/MyReports';
 
 import InspectorDashboard from './pages/inspector/InspectorDashboard';
 import MaintenanceDashboard from './pages/maintenance/MaintenanceDashboard';
+import MaintenanceTaskDetail from './pages/maintenance/MaintenanceTaskDetail';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminReports from './pages/admin/AdminReports';
@@ -91,6 +92,9 @@ function App() {
             {/* Maintenance */}
             <Route path="maintenance" element={
               <ProtectedRoute roles={['maintenance_officer', 'admin']}><MaintenanceDashboard /></ProtectedRoute>
+            } />
+            <Route path="maintenance/:id" element={
+              <ProtectedRoute roles={['maintenance_officer', 'admin']}><MaintenanceTaskDetail /></ProtectedRoute>
             } />
 
             {/* Admin */}
