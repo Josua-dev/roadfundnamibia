@@ -27,15 +27,15 @@ INSERT INTO regions (name, code) VALUES
 -- USERS  (passwords are all: Password123!)
 -- bcrypt hash of "Password123!"
 -- ============================================================
-INSERT INTO users (full_name, email, password_hash, role, region_id, phone) VALUES
-('System Administrator', 'admin@roadfund.na', '$2a$12$zRyD/kXoujpcGBOJb1yOyun/ZrcIxadBzPbhUaEbTPrTdUsmUrlmm', 'admin', 1, '+264 61 000 0001'),
-('Thomas Nambahu', 'inspector@roadfund.na', '$2a$12$zRyD/kXoujpcGBOJb1yOyun/ZrcIxadBzPbhUaEbTPrTdUsmUrlmm', 'inspector', 1, '+264 61 000 0002'),
-('Maria Hamutenya', 'officer@roadfund.na', '$2a$12$zRyD/kXoujpcGBOJb1yOyun/ZrcIxadBzPbhUaEbTPrTdUsmUrlmm', 'maintenance_officer', 1, '+264 61 000 0003'),
-('John Citizen', 'citizen@roadfund.na', '$2a$12$zRyD/kXoujpcGBOJb1yOyun/ZrcIxadBzPbhUaEbTPrTdUsmUrlmm', 'citizen', 2, '+264 81 000 0004'),
-('Aune Shivute', 'aune@example.na', '$2a$12$zRyD/kXoujpcGBOJb1yOyun/ZrcIxadBzPbhUaEbTPrTdUsmUrlmm', 'citizen', 3, '+264 81 111 1111'),
-('David Nakale', 'david@example.na', '$2a$12$zRyD/kXoujpcGBOJb1yOyun/ZrcIxadBzPbhUaEbTPrTdUsmUrlmm', 'citizen', 2, '+264 81 222 2222'),
-('Inspector Heita', 'heita@roadfund.na', '$2a$12$zRyD/kXoujpcGBOJb1yOyun/ZrcIxadBzPbhUaEbTPrTdUsmUrlmm', 'inspector', 2, '+264 61 333 3333'),
-('Officer Katiti', 'katiti@roadfund.na', '$2a$12$zRyD/kXoujpcGBOJb1yOyun/ZrcIxadBzPbhUaEbTPrTdUsmUrlmm', 'maintenance_officer', 3, '+264 61 444 4444');
+INSERT INTO users (full_name, email, password_hash, role, region_id, phone, email_verified) VALUES
+('System Administrator', 'admin@roadfund.na', '$2a$12$zRyD/kXoujpcGBOJb1yOyun/ZrcIxadBzPbhUaEbTPrTdUsmUrlmm', 'admin', 1, '+264 61 000 0001', TRUE),
+('Thomas Nambahu', 'inspector@roadfund.na', '$2a$12$zRyD/kXoujpcGBOJb1yOyun/ZrcIxadBzPbhUaEbTPrTdUsmUrlmm', 'inspector', 1, '+264 61 000 0002', TRUE),
+('Maria Hamutenya', 'officer@roadfund.na', '$2a$12$zRyD/kXoujpcGBOJb1yOyun/ZrcIxadBzPbhUaEbTPrTdUsmUrlmm', 'maintenance_officer', 1, '+264 61 000 0003', TRUE),
+('John Citizen', 'citizen@roadfund.na', '$2a$12$zRyD/kXoujpcGBOJb1yOyun/ZrcIxadBzPbhUaEbTPrTdUsmUrlmm', 'citizen', 2, '+264 81 000 0004', TRUE),
+('Aune Shivute', 'aune@example.na', '$2a$12$zRyD/kXoujpcGBOJb1yOyun/ZrcIxadBzPbhUaEbTPrTdUsmUrlmm', 'citizen', 3, '+264 81 111 1111', TRUE),
+('David Nakale', 'david@example.na', '$2a$12$zRyD/kXoujpcGBOJb1yOyun/ZrcIxadBzPbhUaEbTPrTdUsmUrlmm', 'citizen', 2, '+264 81 222 2222', TRUE),
+('Inspector Heita', 'heita@roadfund.na', '$2a$12$zRyD/kXoujpcGBOJb1yOyun/ZrcIxadBzPbhUaEbTPrTdUsmUrlmm', 'inspector', 2, '+264 61 333 3333', TRUE),
+('Officer Katiti', 'katiti@roadfund.na', '$2a$12$zRyD/kXoujpcGBOJb1yOyun/ZrcIxadBzPbhUaEbTPrTdUsmUrlmm', 'maintenance_officer', 3, '+264 61 444 4444', TRUE);
 
 -- ============================================================
 -- REPORTS

@@ -16,6 +16,15 @@ router.post('/login', [
   body('password').notEmpty(),
 ], ctrl.login);
 
+router.post('/verify-email', [
+  body('email').isEmail(),
+  body('code').trim().isLength({ min: 6, max: 6 }),
+], ctrl.verifyEmail);
+
+router.post('/resend-verification', [
+  body('email').isEmail(),
+], ctrl.resendVerification);
+
 router.get('/profile', authenticateToken, ctrl.getProfile);
 router.put('/profile', authenticateToken, ctrl.updateProfile);
 router.put('/change-password', authenticateToken, ctrl.changePassword);

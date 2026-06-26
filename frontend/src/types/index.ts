@@ -11,6 +11,7 @@ export interface User {
   phone?: string;
   avatar_url?: string;
   is_active: boolean;
+  email_verified?: boolean;
   last_login?: string;
   created_at: string;
   report_count?: number;

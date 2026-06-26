@@ -76,6 +76,13 @@ Road Fund API  ->  http://localhost:5000
 PostgreSQL connected successfully
 ```
 
+> **Signup verification emails:** new accounts get a 6-digit code by email (via [Resend](https://resend.com), free — 3,000 emails/month, no card) before they can log in. Without `RESEND_API_KEY` set, codes just print to your terminal instead of emailing anyone — handy for local dev, but you'll want a real key for anyone other than you to actually sign up. To set it up:
+> 1. Sign up at resend.com (free, no card)
+> 2. Dashboard → API Keys → Create API Key → copy it
+> 3. Add `RESEND_API_KEY=re_...` to `backend/.env` (and to the backend service's environment variables on Render for production)
+>
+> The default sender (`onboarding@resend.dev`) works immediately with no setup. If you want emails to come from your own domain instead, verify it in Resend's dashboard, then set `EMAIL_FROM` to match.
+
 ---
 
 ### Step 4 — Frontend Setup
@@ -224,8 +231,10 @@ roadfund/
 ### Auth
 | Method | Endpoint             | Description |
 |--------|----------------------|-------------|
-| POST   | /api/auth/register   | Create citizen account |
-| POST   | /api/auth/login      | JWT login |
+| POST   | /api/auth/register   | Create citizen account (sends a 6-digit verification code by email) |
+| POST   | /api/auth/verify-email | Confirm the code, activates the account, returns a JWT |
+| POST   | /api/auth/resend-verification | Request a new code (60s cooldown) |
+| POST   | /api/auth/login      | JWT login (blocked until email is verified) |
 | GET    | /api/auth/profile    | Get own profile |
 | PUT    | /api/auth/profile    | Update profile |
 | PUT    | /api/auth/change-password | Change password |

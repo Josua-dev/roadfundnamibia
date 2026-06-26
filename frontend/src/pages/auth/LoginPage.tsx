@@ -22,7 +22,14 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setError(''); setLoading(true);
     try { await login(form.email, form.password); toast.success('Welcome back!'); navigate('/dashboard'); }
-    catch (err: any) { setError(err.response?.data?.message || 'Invalid email or password.'); }
+    catch (err: any) {
+      if (err.response?.data?.requiresVerification) {
+        toast('Please verify your email to continue', { icon: '📧' });
+        navigate(`/verify-email?email=${encodeURIComponent(err.response.data.email)}`);
+        return;
+      }
+      setError(err.response?.data?.message || 'Invalid email or password.');
+    }
     finally { setLoading(false); }
   };
 

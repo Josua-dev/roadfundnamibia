@@ -200,6 +200,20 @@ CREATE TABLE inspection_reports (
   inspection_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ============================================================
+-- EMAIL VERIFICATIONS (signup OTP codes)
+-- ============================================================
+CREATE TABLE email_verifications (
+  id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  code VARCHAR(6) NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  attempts SMALLINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_email_verifications_user ON email_verifications (user_id);
+
 -- ── Report number sequence (race-condition-safe counter) ──────
 CREATE TABLE IF NOT EXISTS report_sequences (
   year     SMALLINT NOT NULL,

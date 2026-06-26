@@ -8,6 +8,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  setSession: (token: string, user: User) => void;
   logout: () => void;
   updateUser: (user: User) => void;
   hasRole: (...roles: UserRole[]) => boolean;
@@ -41,13 +42,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, []);
 
+  const setSession = useCallback((newToken: string, newUser: User) => {
+    localStorage.setItem('rf_token', newToken);
+    localStorage.setItem('rf_user', JSON.stringify(newUser));
+    setToken(newToken);
+    setUser(newUser);
+  }, []);
+
   const login = useCallback(async (email: string, password: string) => {
     const { data } = await api.post('/auth/login', { email, password });
-    localStorage.setItem('rf_token', data.token);
-    localStorage.setItem('rf_user', JSON.stringify(data.user));
-    setToken(data.token);
-    setUser(data.user);
-  }, []);
+    setSession(data.token, data.user);
+  }, [setSession]);
 
   const logout = useCallback(() => {
     localStorage.removeItem('rf_token');
@@ -72,6 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isAuthenticated: !!user && !!token,
     isLoading,
     login,
+    setSession,
     logout,
     updateUser,
     hasRole,

@@ -30,6 +30,14 @@ services:
         value: 7d
       - key: MAX_FILE_SIZE
         value: 10485760
+      # Signup verification emails (Resend, free tier — see README).
+      # Leave RESEND_API_KEY blank and codes just print to the
+      # service logs instead of emailing anyone, which still lets
+      # the rest of the app work, just without real signup emails.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        value: RoadSafe Namibia <onboarding@resend.dev>
       # Predicted from the frontend service name below. Render usually
       # assigns exactly https://<name>.onrender.com — if it picked a
       # different subdomain (e.g. due to a name clash), update this

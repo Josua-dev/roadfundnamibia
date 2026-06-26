@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
 import { Eye, EyeOff, User, Mail, Lock, Phone, AlertCircle, ChevronRight } from 'lucide-react';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
@@ -31,7 +30,6 @@ const Field = ({ icon: Icon, label, children }: { icon: any; label: string; chil
 );
 
 export default function RegisterPage() {
-  const { login } = useAuth();
   const navigate   = useNavigate();
   const [form,    setForm]    = useState({ full_name: '', email: '', password: '', phone: '' });
   const [showPw,  setShowPw]  = useState(false);
@@ -44,9 +42,8 @@ export default function RegisterPage() {
     e.preventDefault(); setError(''); setLoading(true);
     try {
       await api.post('/auth/register', form);
-      await login(form.email, form.password);
-      toast.success('Account created! Welcome to RFA.');
-      navigate('/dashboard');
+      toast.success('Account created — check your email for a verification code.');
+      navigate(`/verify-email?email=${encodeURIComponent(form.email)}`);
     } catch (err: any) {
       setError(err.response?.data?.message || err.response?.data?.errors?.[0]?.msg || 'Registration failed. Please try again.');
     } finally { setLoading(false); }

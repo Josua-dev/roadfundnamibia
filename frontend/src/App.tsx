@@ -9,6 +9,7 @@ import DashboardLayout from './components/layout/DashboardLayout';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import VerifyEmailPage from './pages/auth/VerifyEmailPage';
 
 // Dashboard pages
 import CitizenDashboard from './pages/citizen/CitizenDashboard';
@@ -66,6 +67,7 @@ function App() {
             <Route index element={<LandingPage />} />
             <Route path="login" element={<LoginPage />} />
             <Route path="register" element={<RegisterPage />} />
+            <Route path="verify-email" element={<VerifyEmailPage />} />
           </Route>
 
           {/* ── Protected Dashboard ── */}
