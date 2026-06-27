@@ -1,6 +1,7 @@
 const pool = require('../config/database');
 const { buildSetClause } = require('../utils/sqlHelpers');
 const { auditLog } = require('../utils/auditLog');
+const { notifyUser } = require('../utils/notify');
 
 // Generate report number — race-condition-safe via INSERT ... ON CONFLICT
 // (the report_sequences table is created by database/schema.sql; this
@@ -283,8 +284,8 @@ exports.updateStatus = async (req, res) => {
         [reportId, old.status, status, req.user.id, notes || null]
       );
 
-      // Notify reporter
-      await createNotification(
+      // Notify reporter (in-app + email)
+      await notifyUser(
         old.reported_by,
         'Report Status Updated',
         `Your report "${old.title}" status changed to: ${status.replace('_', ' ')}`,
@@ -355,9 +356,8 @@ exports.createInspection = async (req, res) => {
         'INSERT INTO status_history (report_id, old_status, new_status, changed_by, notes) VALUES ($1, $2, $3, $4, $5)',
         [reportId, report.status, 'verified', req.user.id, 'Verified following inspection']
       );
-      await pool.query(
-        'INSERT INTO notifications (user_id, title, message, type, report_id) VALUES ($1, $2, $3, $4, $5)',
-        [report.reported_by, 'Report Verified', `Your report "${report.title}" has been verified by an inspector`, 'status_update', reportId]
+      await notifyUser(
+        report.reported_by, 'Report Verified', `Your report "${report.title}" has been verified by an inspector`, 'status_update', reportId
       );
     }
 

@@ -38,6 +38,10 @@ services:
         sync: false
       - key: EMAIL_FROM
         value: RoadSafe Namibia <onboarding@resend.dev>
+      # Predicted from the frontend service name below — same caveat
+      # as ALLOWED_ORIGINS if Render renamed it.
+      - key: FRONTEND_URL
+        value: https://roadfund-frontend.onrender.com
       # Predicted from the frontend service name below. Render usually
       # assigns exactly https://<name>.onrender.com — if it picked a
       # different subdomain (e.g. due to a name clash), update this

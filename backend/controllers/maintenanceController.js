@@ -1,6 +1,7 @@
 const pool = require('../config/database');
 const { buildSetClause } = require('../utils/sqlHelpers');
 const { auditLog } = require('../utils/auditLog');
+const { notifyUser } = require('../utils/notify');
 
 // ── GET ALL TASKS ─────────────────────────────────────────────
 exports.getAllTasks = async (req, res) => {
@@ -69,7 +70,7 @@ exports.createTask = async (req, res) => {
             priority, start_date, estimated_completion, notes, cost_estimate } = req.body;
 
     // Check report exists
-    const reports = await pool.query('SELECT id, status FROM reports WHERE id = $1', [report_id]);
+    const reports = await pool.query('SELECT id, title, status FROM reports WHERE id = $1', [report_id]);
     if (!reports.rows.length) return res.status(404).json({ success: false, message: 'Report not found' });
 
     const result = await pool.query(
@@ -87,11 +88,10 @@ exports.createTask = async (req, res) => {
       [assigned_officer || null, report_id]
     );
 
-    // Notify assigned officer
+    // Notify assigned officer (in-app + email)
     if (assigned_officer) {
-      await pool.query(
-        'INSERT INTO notifications (user_id, title, message, type, report_id) VALUES ($1, $2, $3, $4, $5)',
-        [assigned_officer, 'New Maintenance Assignment', `You have been assigned a maintenance task for report #${reports.rows[0].id}`, 'assignment', report_id]
+      await notifyUser(
+        assigned_officer, 'New Maintenance Assignment', `You have been assigned a maintenance task for "${reports.rows[0].title}"`, 'assignment', report_id
       );
     }
 
@@ -115,6 +115,9 @@ exports.updateTask = async (req, res) => {
     const tasks = await pool.query('SELECT * FROM maintenance_tasks WHERE id = $1', [taskId]);
     if (!tasks.rows.length) return res.status(404).json({ success: false, message: 'Task not found' });
 
+    const reportResult = await pool.query('SELECT id, title, status, reported_by FROM reports WHERE id = $1', [tasks.rows[0].report_id]);
+    const report = reportResult.rows[0];
+
     const updates = {};
     if (progress_percent !== undefined) updates.progress_percent = progress_percent;
     if (status) updates.status = status;
@@ -130,25 +133,53 @@ exports.updateTask = async (req, res) => {
     if (progress_percent !== undefined) {
       await pool.query(
         'UPDATE reports SET progress_percent = $1, updated_at = NOW() WHERE id = $2',
-        [progress_percent, tasks.rows[0].report_id]
+        [progress_percent, report.id]
       );
     }
 
-    if (status === 'completed') {
+    // Map task status -> report status, and only act when it actually
+    // changes anything (e.g. saving notes alone shouldn't re-fire this).
+    const reportStatusMap = { completed: 'completed', in_progress: 'in_progress' };
+    const newReportStatus = reportStatusMap[status];
+
+    if (newReportStatus && newReportStatus !== report.status) {
+      if (newReportStatus === 'completed') {
+        await pool.query(
+          "UPDATE reports SET status = 'completed', progress_percent = 100, resolved_at = NOW() WHERE id = $1",
+          [report.id]
+        );
+      } else {
+        await pool.query(
+          "UPDATE reports SET status = 'in_progress', updated_at = NOW() WHERE id = $1",
+          [report.id]
+        );
+      }
+
+      // This status change happened via the maintenance task, not the
+      // report's own status endpoint -- so it needs its own
+      // status_history entry, or the citizen-facing timeline on the
+      // report page would silently skip straight from "assigned" to
+      // "completed" with no record of work having started.
       await pool.query(
-        "UPDATE reports SET status = 'completed', progress_percent = 100, resolved_at = NOW() WHERE id = $1",
-        [tasks.rows[0].report_id]
+        'INSERT INTO status_history (report_id, old_status, new_status, changed_by, notes) VALUES ($1, $2, $3, $4, $5)',
+        [report.id, report.status, newReportStatus, req.user.id, notes || `Updated via maintenance task #${taskId}`]
       );
-    } else if (status === 'in_progress') {
-      await pool.query(
-        "UPDATE reports SET status = 'in_progress', updated_at = NOW() WHERE id = $1",
-        [tasks.rows[0].report_id]
+
+      await notifyUser(
+        report.reported_by,
+        newReportStatus === 'completed' ? 'Report Resolved' : 'Work Has Started',
+        newReportStatus === 'completed'
+          ? `Good news — your report "${report.title}" has been marked as resolved!`
+          : `Work has started on your report "${report.title}".`,
+        'status_update',
+        report.id
       );
     }
 
     auditLog(req.user.id, 'UPDATE_TASK', 'maintenance_tasks', parseInt(taskId), req.ip);
     res.json({ success: true, message: 'Task updated' });
   } catch (error) {
+    console.error('updateTask error:', error);
     res.status(500).json({ success: false, message: 'Update failed' });
   }
 };
