@@ -41,6 +41,48 @@ export default function ReportDetail() {
     onError: (e: any) => toast.error(e.response?.data?.message || 'Failed to record findings'),
   });
 
+  // Assigning a report creates the underlying maintenance_tasks row
+  // (not just a status label) -- so it needs its own form rather than
+  // being a one-click status button like the others.
+  const [showAssignForm, setShowAssignForm] = useState(false);
+  const [assignOfficer, setAssignOfficer] = useState('');
+  const [assignInspector, setAssignInspector] = useState('');
+  const [assignPriority, setAssignPriority] = useState('normal');
+  const [assignTeam, setAssignTeam] = useState('');
+  const [assignEstCompletion, setAssignEstCompletion] = useState('');
+  const [assignCost, setAssignCost] = useState('');
+
+  const { data: officers } = useQuery({
+    queryKey: ['users', 'maintenance_officer'],
+    queryFn: async () => (await api.get('/users', { params: { role: 'maintenance_officer', limit: 100 } })).data.data,
+    enabled: isAdmin && showAssignForm,
+  });
+  const { data: inspectorsList } = useQuery({
+    queryKey: ['users', 'inspector'],
+    queryFn: async () => (await api.get('/users', { params: { role: 'inspector', limit: 100 } })).data.data,
+    enabled: isAdmin && showAssignForm,
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: async () => {
+      await api.post('/maintenance', {
+        report_id: id,
+        assigned_officer: assignOfficer || null,
+        inspector_id: assignInspector || null,
+        priority: assignPriority,
+        assigned_team: assignTeam || null,
+        estimated_completion: assignEstCompletion || null,
+        cost_estimate: assignCost.trim() ? Number(assignCost) : null,
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['report', id] });
+      toast.success('Report assigned');
+      setShowAssignForm(false);
+    },
+    onError: (e: any) => toast.error(e.response?.data?.message || 'Failed to assign report'),
+  });
+
   if (isLoading) return <Skel rows={6} height={80} />;
   if (error || !data) return <Notice type="error" message="Report not found or access denied." />;
 
@@ -200,13 +242,73 @@ export default function ReportDetail() {
                 <textarea value={statusNote} onChange={e => setStatusNote(e.target.value)} rows={2} className="input" style={{ marginBottom: 10 }} placeholder="Add a note (optional)…" />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {STATUS_FLOW.filter((_, i) => i > currentIdx).map(s => (
-                    <button key={s} onClick={() => statusMutation.mutate({ status: s, notes: statusNote })} className="btn-std" style={{ justifyContent: 'flex-start' }}>
-                      Mark as {statusConfig[s].label}
-                    </button>
+                    s === 'assigned' && isAdmin ? (
+                      <button key={s} onClick={() => setShowAssignForm(true)} className="btn-std" style={{ justifyContent: 'flex-start' }}>
+                        Assign to Officer…
+                      </button>
+                    ) : (
+                      <button key={s} onClick={() => statusMutation.mutate({ status: s, notes: statusNote })} className="btn-std" style={{ justifyContent: 'flex-start' }}>
+                        Mark as {statusConfig[s].label}
+                      </button>
+                    )
                   ))}
                   {isAdmin && (
                     <button onClick={() => statusMutation.mutate({ status: 'rejected', notes: statusNote })} className="btn-danger">Reject report</button>
                   )}
+                </div>
+              </div>
+            </Panel>
+          )}
+
+          {showAssignForm && (
+            <Panel variant="bordered">
+              <PanelHeader title="Assign to Officer" />
+              <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div className="field">
+                  <label className="field-label">Maintenance officer <span style={{ color: 'var(--error)' }}>*</span></label>
+                  <select className="input" value={assignOfficer} onChange={e => setAssignOfficer(e.target.value)}>
+                    <option value="">Select an officer…</option>
+                    {(officers || []).map((o: any) => <option key={o.id} value={o.id}>{o.full_name}</option>)}
+                  </select>
+                </div>
+                <div className="field">
+                  <label className="field-label">Inspector (optional)</label>
+                  <select className="input" value={assignInspector} onChange={e => setAssignInspector(e.target.value)}>
+                    <option value="">None</option>
+                    {(inspectorsList || []).map((i: any) => <option key={i.id} value={i.id}>{i.full_name}</option>)}
+                  </select>
+                </div>
+                <div className="field">
+                  <label className="field-label">Priority</label>
+                  <select className="input" value={assignPriority} onChange={e => setAssignPriority(e.target.value)}>
+                    <option value="low">Low</option>
+                    <option value="normal">Normal</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+                <div className="field">
+                  <label className="field-label">Team name (optional)</label>
+                  <input type="text" className="input" value={assignTeam} onChange={e => setAssignTeam(e.target.value)} placeholder="e.g. Alpha Repair Team" />
+                </div>
+                <div className="field">
+                  <label className="field-label">Estimated completion (optional)</label>
+                  <input type="date" className="input" value={assignEstCompletion} onChange={e => setAssignEstCompletion(e.target.value)} />
+                </div>
+                <div className="field">
+                  <label className="field-label">Cost estimate, N$ (optional)</label>
+                  <input type="number" min={0} step="0.01" className="input" value={assignCost} onChange={e => setAssignCost(e.target.value)} placeholder="0.00" />
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => setShowAssignForm(false)} className="btn-std" style={{ flex: 1 }}>Cancel</button>
+                  <button
+                    onClick={() => assignMutation.mutate()}
+                    disabled={!assignOfficer || assignMutation.isPending}
+                    className="btn btn-cta"
+                    style={{ flex: 1, justifyContent: 'center' }}
+                  >
+                    {assignMutation.isPending ? 'Assigning…' : 'Confirm Assignment'}
+                  </button>
                 </div>
               </div>
             </Panel>
