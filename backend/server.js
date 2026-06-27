@@ -15,6 +15,7 @@ const notificationRoutes = require('./routes/notifications');
 const regionRoutes       = require('./routes/regions');
 const uploadRoutes       = require('./routes/uploads');   // secure upload serving
 const auditRoutes        = require('./routes/audit');
+const publicRoutes       = require('./routes/public');
 
 const app = express();
 
@@ -102,6 +103,7 @@ app.use('/api/analytics',     analyticsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/regions',       regionRoutes);
 app.use('/api/audit-logs',    auditRoutes);
+app.use('/api/public',        publicRoutes);
 
 // ── Health check ──────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

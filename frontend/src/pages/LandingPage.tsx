@@ -1,18 +1,24 @@
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import api from '../utils/api';
 import {
   ChevronRight, ArrowRight, MapPin, BarChart3, Shield,
   CheckCircle, Globe, HardHat, Phone, AlertTriangle,
   Zap, Construction, Navigation, Layers,
 } from 'lucide-react';
 
-const ISSUES = [
-  { icon: AlertTriangle, label: 'Potholes',          count: '4,218', color: '#dc2626' },
-  { icon: Construction,  label: 'Damaged Signs',      count: '1,832', color: '#d97706' },
-  { icon: Zap,          label: 'Traffic Light Faults',count: '672',   color: '#ca8a04' },
-  { icon: Navigation,   label: 'Flooded Roads',       count: '1,091', color: '#2563eb' },
-  { icon: Layers,       label: 'Cracked Surfaces',    count: '2,547', color: '#7c3aed' },
-  { icon: AlertTriangle,label: 'Road Blockages',      count: '487',   color: '#3C7A5C' },
-];
+// Icon + color + display label per issue type — this part is genuine
+// design/categorization and stays fixed. Only the count is real data,
+// fetched from /public/stats below.
+const ISSUE_META: Record<string, { icon: any; label: string; color: string }> = {
+  pothole:              { icon: AlertTriangle, label: 'Potholes',             color: '#dc2626' },
+  damaged_sign:         { icon: Construction,  label: 'Damaged Signs',        color: '#d97706' },
+  broken_traffic_light: { icon: Zap,           label: 'Traffic Light Faults', color: '#ca8a04' },
+  flooded_road:         { icon: Navigation,    label: 'Flooded Roads',        color: '#2563eb' },
+  cracked_road:         { icon: Layers,        label: 'Cracked Surfaces',     color: '#7c3aed' },
+  road_blockage:        { icon: AlertTriangle, label: 'Road Blockages',       color: '#3C7A5C' },
+  other:                { icon: AlertTriangle, label: 'Other Issues',         color: '#64748b' },
+};
 
 const SERVICES = [
   { icon: MapPin,       title: 'Precise Reporting',    desc: 'Submit reports with GPS pin accuracy, photos and full issue details in under 2 minutes.', accent: 'var(--secondary)' },
@@ -39,6 +45,19 @@ function RFALogo({ size = 40 }: { size?: number }) {
 }
 
 export default function LandingPage() {
+  // Public, unauthenticated -- real counts from the live database,
+  // not hardcoded marketing numbers.
+  const { data: stats } = useQuery({
+    queryKey: ['public-stats'],
+    queryFn: async () => (await api.get('/public/stats')).data.data,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const issueRows = (stats?.by_issue_type || [])
+    .filter((r: any) => ISSUE_META[r.issue_type])
+    .sort((a: any, b: any) => b.count - a.count)
+    .map((r: any) => ({ ...ISSUE_META[r.issue_type], count: r.count }));
+
   return (
     <div style={{ background: 'var(--bg-panel)', color: 'var(--primary)' }}>
 
@@ -108,7 +127,11 @@ export default function LandingPage() {
 
             {/* Stats */}
             <div style={{ display: 'flex', gap: 36, marginTop: 40, paddingTop: 32, borderTop: '1px solid rgba(255,255,255,0.1)', flexWrap: 'wrap' }}>
-              {[['12,847', 'Reports Processed'], ['3,291', 'Roads Repaired'], ['14', 'Regions']].map(([v, l]) => (
+              {[
+                [stats?.total_reports?.toLocaleString() ?? '—', 'Reports Processed'],
+                [stats?.roads_repaired?.toLocaleString() ?? '—', 'Roads Repaired'],
+                [stats?.regions ?? '—', 'Regions'],
+              ].map(([v, l]) => (
                 <div key={l}>
                   <div style={{ color: 'var(--secondary)', fontWeight: 800, fontSize: '1.5rem', lineHeight: 1 }}>{v}</div>
                   <div style={{ color: 'rgba(255,255,255,0.38)', fontSize: '0.75rem', marginTop: 4 }}>{l}</div>
@@ -123,13 +146,13 @@ export default function LandingPage() {
               Common Issue Types
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {ISSUES.map(({ icon: Icon, label, count, color }) => (
+              {issueRows.map(({ icon: Icon, label, count, color }: any) => (
                 <div key={label} className="glass-dark" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', borderRadius: 12 }}>
                   <div style={{ width: 34, height: 34, borderRadius: 8, background: `${color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Icon size={16} style={{ color }}/>
                   </div>
                   <span style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 500, flex: 1, fontSize: '0.875rem' }}>{label}</span>
-                  <span style={{ color: 'var(--secondary)', fontSize: '0.8rem', fontWeight: 700 }}>{count}</span>
+                  <span style={{ color: 'var(--secondary)', fontSize: '0.8rem', fontWeight: 700 }}>{count.toLocaleString()}</span>
                 </div>
               ))}
             </div>

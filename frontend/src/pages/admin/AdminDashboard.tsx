@@ -48,7 +48,15 @@ export default function AdminDashboard() {
         {statsLoading ? <div style={{ padding: 20 }}><Skel rows={1} height={48} /></div> : (
           <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr 1fr 1fr', gap: 0 }}>
             <div style={{ padding: '18px 22px', borderRight: '1px solid var(--line)' }}>
-              <KpiTile label="Total Reports — All Time" value={stats?.total_reports ?? 0} delta={{ dir: 'up', text: 'trending with new regional onboarding' }} />
+              <KpiTile
+                label="Total Reports — All Time"
+                value={stats?.total_reports ?? 0}
+                delta={
+                  stats?.this_week > 0
+                    ? { dir: 'up', text: `${stats.this_week} new this week` }
+                    : { dir: 'flat', text: 'No new reports this week' }
+                }
+              />
             </div>
             <div style={{ padding: '18px 22px', borderRight: '1px solid var(--line)' }}>
               <KpiTile label="Active Users" value={stats?.total_users ?? 0} unit="accounts" />

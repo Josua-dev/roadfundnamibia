@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
 import { Eye, EyeOff, Lock, Mail, AlertCircle } from 'lucide-react';
+import api from '../../utils/api';
 import toast from 'react-hot-toast';
 
 const demos = [
@@ -14,10 +16,21 @@ const demos = [
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate   = useNavigate();
+  const [searchParams] = useSearchParams();
+  // Demo-account shortcuts are for internal testing, not something a
+  // real visitor to a government platform's login page should see --
+  // only render them when explicitly asked for via ?demo=true.
+  const showDemos = searchParams.get('demo') === 'true';
   const [form,    setForm]    = useState({ email: '', password: '' });
   const [showPw,  setShowPw]  = useState(false);
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState('');
+
+  const { data: stats } = useQuery({
+    queryKey: ['public-stats'],
+    queryFn: async () => (await api.get('/public/stats')).data.data,
+    staleTime: 1000 * 60 * 5,
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setError(''); setLoading(true);
@@ -80,7 +93,11 @@ export default function LoginPage() {
 
           {/* Stats strip */}
           <div className="glass-dark" style={{ display:'flex', gap:32, flexWrap:'wrap', padding: '16px 20px', borderRadius: 12 }}>
-            {[['12,847', 'Reports Processed'], ['3,291', 'Roads Repaired'], ['14', 'Regions']].map(([v, l]) => (
+            {[
+              [stats?.total_reports?.toLocaleString() ?? '—', 'Reports Processed'],
+              [stats?.roads_repaired?.toLocaleString() ?? '—', 'Roads Repaired'],
+              [stats?.regions ?? '—', 'Regions'],
+            ].map(([v, l]) => (
               <div key={l}>
                 <div style={{ color:'var(--secondary)', fontWeight:800, fontSize:'1.5rem', lineHeight:1 }}>{v}</div>
                 <div style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.75rem', marginTop:4 }}>{l}</div>
@@ -108,28 +125,30 @@ export default function LoginPage() {
             Enter your credentials to access your account
           </p>
 
-          {/* Demo tiles */}
-          <div style={{ marginBottom:24 }}>
-            <p style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--text-3)', marginBottom:10, marginTop:0 }}>
-              Quick Demo Access
-            </p>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
-              {demos.map(({ label, email, color }) => (
-                <button key={label} type="button"
-                  onClick={() => setForm({ email, password:'Password123!' })}
-                  style={{
-                    padding:'8px 12px', borderRadius:8, border:`1.5px solid ${color}25`,
-                    background:`${color}08`, color, fontWeight:600, fontSize:'0.8rem',
-                    cursor:'pointer', textAlign:'left', transition:'all 0.15s',
-                  }}
-                  onMouseOver={e => (e.currentTarget.style.background = `${color}15`)}
-                  onMouseOut={e  => (e.currentTarget.style.background = `${color}08`)}
-                >
-                  {label}
-                </button>
-              ))}
+          {/* Demo tiles — only when explicitly requested via ?demo=true */}
+          {showDemos && (
+            <div style={{ marginBottom:24 }}>
+              <p style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--text-3)', marginBottom:10, marginTop:0 }}>
+                Quick Demo Access
+              </p>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+                {demos.map(({ label, email, color }) => (
+                  <button key={label} type="button"
+                    onClick={() => setForm({ email, password:'Password123!' })}
+                    style={{
+                      padding:'8px 12px', borderRadius:8, border:`1.5px solid ${color}25`,
+                      background:`${color}08`, color, fontWeight:600, fontSize:'0.8rem',
+                      cursor:'pointer', textAlign:'left', transition:'all 0.15s',
+                    }}
+                    onMouseOver={e => (e.currentTarget.style.background = `${color}15`)}
+                    onMouseOut={e  => (e.currentTarget.style.background = `${color}08`)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <div style={{ height:1, background:'var(--line)', margin:'0 0 24px' }}/>
 
