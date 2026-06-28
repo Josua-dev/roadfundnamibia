@@ -99,7 +99,26 @@ export default function LandingPage() {
             have something to refract — kept low-opacity and out of
             the way of any text. */}
         <div className="glass-blob" style={{ width: 420, height: 420, background: 'var(--secondary)', opacity: 0.16, top: -120, right: -60 }} />
-        <div className="glass-blob" style={{ width: 320, height: 320, background: 'var(--accent)', opacity: 0.10, bottom: -100, right: 280 }} />
+        <div className="glass-blob" style={{ width: 320, height: 320, background: 'var(--accent)', opacity: 0.10, bottom: -100, right: 280, animationDelay: '3s' }} />
+
+        <div className="road-lines" />
+        {[
+          { top: '18%', width: 170, color: 'var(--secondary)', duration: 7,  delay: 0,   rotate: -8 },
+          { top: '32%', width: 130, color: '#fff',              duration: 9,  delay: 2.2, rotate: -8 },
+          { top: '48%', width: 200, color: 'var(--secondary)', duration: 6,  delay: 4.1, rotate: -8 },
+          { top: '61%', width: 110, color: '#fff',              duration: 10, delay: 1.1, rotate: -8 },
+          { top: '74%', width: 160, color: 'var(--secondary)', duration: 8,  delay: 5.4, rotate: -8 },
+          { top: '85%', width: 140, color: '#fff',              duration: 7.5,delay: 3.3, rotate: -8 },
+        ].map((s, i) => (
+          <div key={i} className="light-streak" style={{
+            top: s.top, width: s.width,
+            background: `linear-gradient(90deg, transparent, ${s.color}, transparent)`,
+            boxShadow: `0 0 8px ${s.color}`,
+            transform: `rotate(${s.rotate}deg)`,
+            animationDuration: `${s.duration}s`,
+            animationDelay: `${s.delay}s`,
+          }} />
+        ))}
 
         <div style={{ maxWidth: 1160, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 420px', gap: 64, alignItems: 'center', position: 'relative', zIndex: 1 }}>
 
