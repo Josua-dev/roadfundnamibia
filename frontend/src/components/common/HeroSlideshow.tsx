@@ -38,7 +38,7 @@ export function HeroSlideshow({ images, intervalMs = 5500 }: { images: SlideImag
       {/* Dark scrim so heading/body text stays readable over any photo */}
       <div style={{
         position: 'absolute', inset: 0,
-        background: 'linear-gradient(115deg, rgba(20,28,38,0.94) 0%, rgba(20,28,38,0.82) 38%, rgba(20,28,38,0.55) 70%, rgba(20,28,38,0.4) 100%)',
+        background: 'linear-gradient(115deg, rgba(20,28,38,0.94) 0%, rgba(20,28,38,0.85) 38%, rgba(20,28,38,0.68) 70%, rgba(20,28,38,0.58) 100%)',
       }} />
       <div style={{
         position: 'absolute', bottom: 10, right: 16,

@@ -156,17 +156,17 @@ export default function LandingPage() {
 
           {/* Issue type list */}
           <div>
-            <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.3)', marginBottom: 14 }}>
+            <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.6)', marginBottom: 14, textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
               Common Issue Types
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {issueRows.map(({ icon: Icon, label, count, color }: any) => (
-                <div key={label} className="glass-dark" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', borderRadius: 12 }}>
-                  <div style={{ width: 34, height: 34, borderRadius: 8, background: `${color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', borderRadius: 12, background: 'rgba(15,21,28,0.72)', backdropFilter: 'blur(16px) saturate(140%)', WebkitBackdropFilter: 'blur(16px) saturate(140%)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                  <div style={{ width: 34, height: 34, borderRadius: 8, background: `${color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Icon size={16} style={{ color }}/>
                   </div>
-                  <span style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 500, flex: 1, fontSize: '0.875rem' }}>{label}</span>
-                  <span style={{ color: 'var(--secondary)', fontSize: '0.8rem', fontWeight: 700 }}>{count.toLocaleString()}</span>
+                  <span style={{ color: 'rgba(255,255,255,0.92)', fontWeight: 500, flex: 1, fontSize: '0.875rem' }}>{label}</span>
+                  <span style={{ background: color, color: 'white', fontSize: '0.74rem', fontWeight: 700, padding: '2px 9px', borderRadius: 999, minWidth: 22, textAlign: 'center' }}>{count.toLocaleString()}</span>
                 </div>
               ))}
             </div>
