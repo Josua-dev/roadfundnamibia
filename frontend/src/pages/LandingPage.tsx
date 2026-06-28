@@ -154,22 +154,27 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Issue type list */}
-          <div>
-            <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.6)', marginBottom: 14, textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
+          {/* Issue type breakdown — proportional bars, one accent
+              color throughout. (Previously: a stack of identically-
+              shaped cards each in a different random accent color
+              with a circular count badge — reads as templated rather
+              than as actual data.) */}
+          <div style={{ background: 'rgba(15,21,28,0.72)', backdropFilter: 'blur(16px) saturate(140%)', WebkitBackdropFilter: 'blur(16px) saturate(140%)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 14, padding: '18px 20px' }}>
+            <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.55)', marginBottom: 16 }}>
               Common Issue Types
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {issueRows.map(({ icon: Icon, label, count, color }: any) => (
-                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', borderRadius: 12, background: 'rgba(15,21,28,0.72)', backdropFilter: 'blur(16px) saturate(140%)', WebkitBackdropFilter: 'blur(16px) saturate(140%)', border: '1px solid rgba(255,255,255,0.12)' }}>
-                  <div style={{ width: 34, height: 34, borderRadius: 8, background: `${color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Icon size={16} style={{ color }}/>
-                  </div>
-                  <span style={{ color: 'rgba(255,255,255,0.92)', fontWeight: 500, flex: 1, fontSize: '0.875rem' }}>{label}</span>
-                  <span style={{ background: color, color: 'white', fontSize: '0.74rem', fontWeight: 700, padding: '2px 9px', borderRadius: 999, minWidth: 22, textAlign: 'center' }}>{count.toLocaleString()}</span>
+            {issueRows.map(({ icon: Icon, label, count }: any, i: number) => (
+              <div key={label} style={{ marginBottom: i < issueRows.length - 1 ? 13 : 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 6 }}>
+                  <Icon size={13} style={{ color: 'rgba(255,255,255,0.5)', flexShrink: 0 }}/>
+                  <span style={{ color: 'rgba(255,255,255,0.88)', fontWeight: 500, fontSize: '0.82rem', flex: 1 }}>{label}</span>
+                  <span style={{ color: 'white', fontWeight: 700, fontSize: '0.82rem' }}>{count.toLocaleString()}</span>
                 </div>
-              ))}
-            </div>
+                <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.13)', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${(count / (issueRows[0]?.count || 1)) * 100}%`, background: 'var(--secondary)', borderRadius: 3 }}/>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
