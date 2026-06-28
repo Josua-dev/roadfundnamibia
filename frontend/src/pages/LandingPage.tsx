@@ -1,11 +1,30 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '../utils/api';
+import { HeroSlideshow, SlideImage } from '../components/common/HeroSlideshow';
 import {
   ChevronRight, ArrowRight, MapPin, BarChart3, Shield,
   CheckCircle, Globe, HardHat, Phone, AlertTriangle,
   Zap, Construction, Navigation, Layers,
 } from 'lucide-react';
+
+// Free-license (Unsplash License, not Unsplash+) road/construction
+// photos -- not sourced from generic image search, since there's no
+// way to verify licensing on arbitrary search-result images, and
+// these are baked into a live public site. Attribution shown in the
+// slideshow itself even though Unsplash doesn't require it.
+const HERO_PHOTOS: SlideImage[] = [
+  { url: 'https://images.unsplash.com/photo-1503708928676-1cb796a0891e?auto=format&fit=crop&w=1600&q=80', credit: 'Jamar Penny' },
+  { url: 'https://images.unsplash.com/photo-1517089596392-fb9a9033e05b?auto=format&fit=crop&w=1600&q=80', credit: 'Shane McLendon' },
+  { url: 'https://images.unsplash.com/photo-1529792083865-d23889753466?auto=format&fit=crop&w=1600&q=80', credit: 'Nicolas J Leclercq' },
+  { url: 'https://images.unsplash.com/photo-1583024011792-b165975b52f5?auto=format&fit=crop&w=1600&q=80', credit: 'EESOFUFFZICH' },
+  { url: 'https://images.unsplash.com/photo-1504930268766-d71549a36ec2?auto=format&fit=crop&w=1600&q=80', credit: 'Jamie Street' },
+  { url: 'https://images.unsplash.com/photo-1706712637075-f47fb47548f2?auto=format&fit=crop&w=1600&q=80', credit: 'Tom Shamberger' },
+  { url: 'https://images.unsplash.com/photo-1534097575056-ddba81f714c8?auto=format&fit=crop&w=1600&q=80', credit: 'Brandon Mowinkel' },
+  { url: 'https://images.unsplash.com/photo-1593436878048-92622a77d315?auto=format&fit=crop&w=1600&q=80', credit: 'Mika Baumeister' },
+  { url: 'https://images.unsplash.com/photo-1603814929877-d5d927322656?auto=format&fit=crop&w=1600&q=80', credit: 'Jason Jarrach' },
+  { url: 'https://images.unsplash.com/photo-1610477865545-37711c53144d?auto=format&fit=crop&w=1600&q=80', credit: 'Zizi zi' },
+];
 
 // Icon + color + display label per issue type — this part is genuine
 // design/categorization and stays fixed. Only the count is real data,
@@ -95,31 +114,7 @@ export default function LandingPage() {
 
       {/* ── Hero ────────────────────────────────────────────── */}
       <section style={{ background: 'var(--primary)', padding: '80px 24px 80px', position: 'relative', overflow: 'hidden' }}>
-        {/* Soft ambient color, present only so the glass tiles below
-            have something to refract — kept low-opacity and out of
-            the way of any text. */}
-        <div className="glass-blob" style={{ width: 420, height: 420, background: 'var(--secondary)', opacity: 0.16, top: -120, right: -60 }} />
-        <div className="glass-blob" style={{ width: 320, height: 320, background: 'var(--accent)', opacity: 0.10, bottom: -100, right: 280, animationDelay: '3s' }} />
-
-        <div className="road-lines" />
-        {[
-          { top: '18%', width: 170, color: 'var(--secondary)', duration: 7,  delay: 0,   rotate: -8 },
-          { top: '32%', width: 130, color: '#fff',              duration: 9,  delay: 2.2, rotate: -8 },
-          { top: '48%', width: 200, color: 'var(--secondary)', duration: 6,  delay: 4.1, rotate: -8 },
-          { top: '61%', width: 110, color: '#fff',              duration: 10, delay: 1.1, rotate: -8 },
-          { top: '74%', width: 160, color: 'var(--secondary)', duration: 8,  delay: 5.4, rotate: -8 },
-          { top: '85%', width: 140, color: '#fff',              duration: 7.5,delay: 3.3, rotate: -8 },
-        ].map((s, i) => (
-          <div key={i} className="light-streak" style={{
-            top: s.top, width: s.width,
-            background: `linear-gradient(90deg, transparent, ${s.color}, transparent)`,
-            boxShadow: `0 0 8px ${s.color}`,
-            transform: `rotate(${s.rotate}deg)`,
-            animationDuration: `${s.duration}s`,
-            animationDelay: `${s.delay}s`,
-          }} />
-        ))}
-
+        <HeroSlideshow images={HERO_PHOTOS} />
         <div style={{ maxWidth: 1160, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 420px', gap: 64, alignItems: 'center', position: 'relative', zIndex: 1 }}>
 
           {/* Copy */}

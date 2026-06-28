@@ -287,53 +287,8 @@ textarea.input { resize: vertical; min-height: 84px; }
   50%      { transform: scale(1.15); opacity: 0.8; }
 }
 
-/* Slowly-scrolling diagonal lane lines — suggests forward motion on
-   a road without needing a real photo/video asset. Pure CSS, no
-   licensing concerns, dead cheap to render (one gradient layer). */
-.road-lines {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.5;
-  background-image: repeating-linear-gradient(
-    -35deg,
-    transparent 0px,
-    transparent 64px,
-    rgba(255,255,255,0.045) 64px,
-    rgba(255,255,255,0.045) 67px
-  );
-  background-size: 200px 200px;
-  animation: road-scroll 14s linear infinite;
-}
-@keyframes road-scroll {
-  from { background-position: 0 0; }
-  to   { background-position: -400px 280px; }
-}
-
-/* Comet-style light streaks — like headlights/taillights passing on
-   a highway at night. `left` (not transform) is animated so the
-   travel distance is always relative to the hero section's actual
-   width, regardless of viewport size. */
-.light-streak {
-  position: absolute;
-  height: 2px;
-  border-radius: 2px;
-  pointer-events: none;
-  z-index: 0;
-  animation-name: streak-move;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-}
-@keyframes streak-move {
-  0%   { left: -16%; opacity: 0; }
-  8%   { opacity: 1; }
-  88%  { opacity: 1; }
-  100% { left: 112%; opacity: 0; }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .glass-blob, .road-lines, .light-streak { animation: none; }
+  .glass-blob { animation: none; }
 }
 
 /* Soft brand-colored glow — a warmth accent, used sparingly on a
