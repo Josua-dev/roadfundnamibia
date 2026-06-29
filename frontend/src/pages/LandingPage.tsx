@@ -227,13 +227,14 @@ export default function LandingPage() {
       </section>
 
       {/* ── CTA ──────────────────────────────────────────────── */}
-      <section style={{ background: 'var(--primary)', padding: '72px 24px' }}>
-        <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center' }}>
+      <section style={{ background: 'var(--primary)', padding: '72px 24px', position: 'relative', overflow: 'hidden' }}>
+        <HeroSlideshow images={[...HERO_PHOTOS].reverse()} intervalMs={6000} />
+        <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <h2 style={{ color: 'white', fontSize: '2rem', fontWeight: 800, margin: '0 0 16px', letterSpacing: '-0.015em' }}>
             See a Road Problem?{' '}
             <span style={{ color: 'var(--secondary)' }}>Report It Now.</span>
           </h2>
-          <p style={{ color: 'rgba(255,255,255,0.58)', fontSize: '0.975rem', margin: '0 0 32px', lineHeight: 1.75 }}>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.975rem', margin: '0 0 32px', lineHeight: 1.75 }}>
             Join thousands of Namibians helping build safer, better roads. Your report reaches the right team immediately.
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
