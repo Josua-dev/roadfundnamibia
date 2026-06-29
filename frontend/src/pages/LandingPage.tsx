@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom'; 
 import { useQuery } from '@tanstack/react-query';
 import api from '../utils/api';
 import { HeroSlideshow, SlideImage } from '../components/common/HeroSlideshow';
