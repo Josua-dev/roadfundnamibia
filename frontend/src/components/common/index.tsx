@@ -232,3 +232,21 @@ export const AttachmentThumb = ({ filePath, fileName, mimeType }: { filePath: st
     </a>
   );
 };
+
+/* ── Brand mark — shared so any public-facing page (landing, the
+   Impact page, etc.) renders the identical logo instead of each
+   page keeping its own copy. ──────────────────────────────────── */
+export function RFALogo({ size = 40 }: { size?: number }) {
+  return (
+    <span className="brand-glow" style={{ display: 'inline-flex', borderRadius: 9 }}>
+      <svg width={size} height={size} viewBox="0 0 40 40" fill="none">
+        <rect width="40" height="40" rx="9" fill="#3C7A5C"/>
+        <rect x="18.5" y="5"  width="3" height="6"  rx="1.5" fill="white"/>
+        <rect x="18.5" y="16" width="3" height="8"  rx="1.5" fill="white"/>
+        <rect x="18.5" y="29" width="3" height="5"  rx="1.5" fill="white"/>
+        <rect x="8"    y="5"  width="2" height="30" rx="1"   fill="rgba(255,255,255,0.28)"/>
+        <rect x="30"   y="5"  width="2" height="30" rx="1"   fill="rgba(255,255,255,0.28)"/>
+      </svg>
+    </span>
+  );
+}

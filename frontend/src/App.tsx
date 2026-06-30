@@ -7,6 +7,7 @@ import DashboardLayout from './components/layout/DashboardLayout';
 
 // Public pages
 import LandingPage from './pages/LandingPage';
+import ImpactPage from './pages/ImpactPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import VerifyEmailPage from './pages/auth/VerifyEmailPage';
@@ -65,6 +66,7 @@ function App() {
           {/* ── Public ── */}
           <Route element={<PublicLayout />}>
             <Route index element={<LandingPage />} />
+            <Route path="impact" element={<ImpactPage />} />
             <Route path="login" element={<LoginPage />} />
             <Route path="register" element={<RegisterPage />} />
             <Route path="verify-email" element={<VerifyEmailPage />} />

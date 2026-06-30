@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '../utils/api';
 import { HeroSlideshow, SlideImage } from '../components/common/HeroSlideshow';
+import { RFALogo } from '../components/common';
 import {
   ChevronRight, ArrowRight, MapPin, BarChart3, Shield,
   CheckCircle, Globe, HardHat, Phone, AlertTriangle,
@@ -48,20 +49,7 @@ const SERVICES = [
   { icon: Globe,        title: 'All 14 Regions',       desc: 'Full national coverage from Kavango East to Karas, Erongo to Zambezi.', accent: 'var(--primary)' },
 ];
 
-function RFALogo({ size = 40 }: { size?: number }) {
-  return (
-    <span className="brand-glow" style={{ display: 'inline-flex', borderRadius: 9 }}>
-      <svg width={size} height={size} viewBox="0 0 40 40" fill="none">
-        <rect width="40" height="40" rx="9" fill="#3C7A5C"/>
-        <rect x="18.5" y="5"  width="3" height="6"  rx="1.5" fill="white"/>
-        <rect x="18.5" y="16" width="3" height="8"  rx="1.5" fill="white"/>
-        <rect x="18.5" y="29" width="3" height="5"  rx="1.5" fill="white"/>
-        <rect x="8"    y="5"  width="2" height="30" rx="1"   fill="rgba(255,255,255,0.28)"/>
-        <rect x="30"   y="5"  width="2" height="30" rx="1"   fill="rgba(255,255,255,0.28)"/>
-      </svg>
-    </span>
-  );
-}
+
 
 export default function LandingPage() {
   // Public, unauthenticated -- real counts from the live database,
@@ -101,6 +89,9 @@ export default function LandingPage() {
             </div>
           </Link>
           <nav style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <Link to="/impact" style={{ padding: '9px 16px', fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-2)' }}>
+              Our Impact
+            </Link>
             <Link to="/login"
               style={{ padding: '9px 20px', borderRadius: 8, border: '1.5px solid var(--line)', fontWeight: 600, fontSize: '0.875rem', color: 'var(--primary)', background: 'transparent' }}>
               Sign In

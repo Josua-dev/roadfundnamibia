@@ -185,6 +185,35 @@ exports.updateTask = async (req, res) => {
 };
 
 // ── GET SINGLE TASK ───────────────────────────────────────────
+// ── UPLOAD COMPLETION PHOTO (before/after proof) ──────────────
+exports.uploadCompletionPhoto = async (req, res) => {
+  if (!/^\d+$/.test(req.params.id)) {
+    return res.status(400).json({ success: false, message: 'Invalid task ID' });
+  }
+  try {
+    const tasks = await pool.query('SELECT report_id FROM maintenance_tasks WHERE id = $1', [req.params.id]);
+    if (!tasks.rows.length) return res.status(404).json({ success: false, message: 'Task not found' });
+
+    if (!req.files || !req.files.length) {
+      return res.status(400).json({ success: false, message: 'At least one photo is required' });
+    }
+
+    const reportId = tasks.rows[0].report_id;
+    for (const file of req.files) {
+      await pool.query(
+        "INSERT INTO attachments (report_id, file_name, file_path, file_size, mime_type, stage, uploaded_by) VALUES ($1, $2, $3, $4, $5, 'completed', $6)",
+        [reportId, file.originalname, `/api/uploads/${file.filename}`, file.size, file.mimetype, req.user.id]
+      );
+    }
+
+    auditLog(req.user.id, 'UPLOAD_COMPLETION_PHOTO', 'reports', reportId, req.ip);
+    res.status(201).json({ success: true, message: 'Completion photo(s) uploaded' });
+  } catch (error) {
+    console.error('uploadCompletionPhoto error:', error);
+    res.status(500).json({ success: false, message: 'Upload failed' });
+  }
+};
+
 exports.getTask = async (req, res) => {
   if (!/^\d+$/.test(req.params.id)) {
     return res.status(400).json({ success: false, message: 'Invalid task ID' });
@@ -207,7 +236,13 @@ exports.getTask = async (req, res) => {
     );
 
     if (!tasks.rows.length) return res.status(404).json({ success: false, message: 'Task not found' });
-    res.json({ success: true, data: tasks.rows[0] });
+
+    const attachments = await pool.query(
+      'SELECT id, file_name, file_path, mime_type, stage FROM attachments WHERE report_id = $1 ORDER BY created_at ASC',
+      [tasks.rows[0].report_id]
+    );
+
+    res.json({ success: true, data: { ...tasks.rows[0], attachments: attachments.rows } });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch task' });
   }

@@ -135,6 +135,9 @@ CREATE TABLE attachments (
   file_path VARCHAR(500) NOT NULL,
   file_size INT,
   mime_type VARCHAR(100),
+  -- 'reported' = citizen's original photo, 'completed' = officer's
+  -- proof-of-repair photo. Powers the public before/after Impact page.
+  stage VARCHAR(20) NOT NULL DEFAULT 'reported' CHECK (stage IN ('reported', 'completed')),
   uploaded_by INT NOT NULL REFERENCES users(id),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

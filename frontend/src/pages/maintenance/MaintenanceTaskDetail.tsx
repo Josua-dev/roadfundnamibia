@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, MapPin, User, Wrench, DollarSign, Calendar } from 'lucide-react';
+import { ArrowLeft, MapPin, User, Wrench, DollarSign, Calendar, Camera, Image as ImageIcon } from 'lucide-react';
 import api from '../../utils/api';
-import { Panel, PanelHeader, TaskStatusTag, PriorityTag, SeverityTag, Meter, Skel, Notice } from '../../components/common';
+import { Panel, PanelHeader, TaskStatusTag, PriorityTag, SeverityTag, Meter, Skel, Notice, AttachmentThumb } from '../../components/common';
 import { formatDate, formatDateTime, formatCurrency, issueTypeConfig } from '../../utils/helpers';
 import { TaskStatus } from '../../types';
 import toast from 'react-hot-toast';
@@ -53,6 +53,22 @@ export default function MaintenanceTaskDetail() {
     onError: () => toast.error('Update failed'),
   });
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
+  const uploadPhotoMutation = useMutation({
+    mutationFn: async () => {
+      const fd = new FormData();
+      pendingPhotos.forEach(f => fd.append('photos', f));
+      await api.post(`/maintenance/${id}/completion-photo`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+    },
+    onSuccess: () => {
+      toast.success('Photo uploaded — this helps build public trust in the repair.');
+      setPendingPhotos([]);
+      qc.invalidateQueries({ queryKey: ['maintenance-task', id] });
+    },
+    onError: (e: any) => toast.error(e.response?.data?.message || 'Upload failed'),
+  });
+
   if (isLoading) return <Skel rows={6} height={80} />;
   if (error || !task) return <Notice type="error" message="Task not found or access denied." />;
 
@@ -95,6 +111,51 @@ export default function MaintenanceTaskDetail() {
                 </div>
                 <Meter value={task.progress_percent} showLabel={false} />
               </div>
+            </div>
+          </Panel>
+
+          <Panel variant="bordered">
+            <PanelHeader title="Photos" subtitle="Before/after proof of the repair" />
+            <div className="panel-body">
+              {(() => {
+                const before = (task.attachments || []).filter((a: any) => a.stage === 'reported');
+                const after = (task.attachments || []).filter((a: any) => a.stage === 'completed');
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <div>
+                      <div className="text-label" style={{ marginBottom: 8 }}>Before (citizen's report)</div>
+                      {before.length
+                        ? <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 8 }}>
+                            {before.map((a: any) => <AttachmentThumb key={a.id} filePath={a.file_path} fileName={a.file_name} mimeType={a.mime_type} />)}
+                          </div>
+                        : <p className="text-meta" style={{ margin: 0 }}>No photo was attached to the original report.</p>}
+                    </div>
+                    <div>
+                      <div className="text-label" style={{ marginBottom: 8 }}>After (proof of repair)</div>
+                      {after.length
+                        ? <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 8 }}>
+                            {after.map((a: any) => <AttachmentThumb key={a.id} filePath={a.file_path} fileName={a.file_name} mimeType={a.mime_type} />)}
+                          </div>
+                        : <p className="text-meta" style={{ margin: 0 }}>No completion photo yet.</p>}
+
+                      <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={e => setPendingPhotos(Array.from(e.target.files || []))} style={{ display: 'none' }} />
+                      {pendingPhotos.length > 0 ? (
+                        <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span className="text-meta">{pendingPhotos.length} photo(s) selected</span>
+                          <button onClick={() => uploadPhotoMutation.mutate()} disabled={uploadPhotoMutation.isPending} className="btn btn-cta" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+                            {uploadPhotoMutation.isPending ? 'Uploading…' : 'Upload'}
+                          </button>
+                          <button onClick={() => setPendingPhotos([])} className="btn-std" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>Cancel</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => fileInputRef.current?.click()} className="btn-std" style={{ marginTop: 10, fontSize: '0.8rem' }}>
+                          <Camera size={13} /> Add completion photo
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </Panel>
 
