@@ -3,21 +3,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, User, Mail, Lock, Phone, AlertCircle, ChevronRight } from 'lucide-react';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
+import { RFALogo } from '../../components/common';
+import { HeroSlideshow, SlideImage } from '../../components/common/HeroSlideshow';
 
-function RFALogo() {
-  return (
-    <span className="brand-glow" style={{ display: 'inline-flex', borderRadius: 9 }}>
-      <svg width="38" height="38" viewBox="0 0 38 38" fill="none">
-        <rect width="38" height="38" rx="9" fill="#3C7A5C"/>
-        <rect x="17.5" y="5" width="3" height="5.5" rx="1.5" fill="white"/>
-        <rect x="17.5" y="15" width="3" height="8" rx="1.5" fill="white"/>
-        <rect x="17.5" y="28" width="3" height="5" rx="1.5" fill="white"/>
-        <rect x="7.5" y="5" width="2" height="28" rx="1" fill="rgba(255,255,255,0.28)"/>
-        <rect x="28.5" y="5" width="2" height="28" rx="1" fill="rgba(255,255,255,0.28)"/>
-      </svg>
-    </span>
-  );
-}
+const PANEL_PHOTOS: SlideImage[] = [
+  { url: 'https://images.unsplash.com/photo-1517089596392-fb9a9033e05b?auto=format&fit=crop&w=900&q=80', credit: 'Shane McLendon' },
+  { url: 'https://images.unsplash.com/photo-1583024011792-b165975b52f5?auto=format&fit=crop&w=900&q=80', credit: 'EESOFUFFZICH' },
+  { url: 'https://images.unsplash.com/photo-1534097575056-ddba81f714c8?auto=format&fit=crop&w=900&q=80', credit: 'Brandon Mowinkel' },
+  { url: 'https://images.unsplash.com/photo-1603814929877-d5d927322656?auto=format&fit=crop&w=900&q=80', credit: 'Jason Jarrach' },
+];
 
 const Field = ({ icon: Icon, label, children }: { icon: any; label: string; children: React.ReactNode }) => (
   <div className="field">
@@ -54,26 +48,24 @@ export default function RegisterPage() {
 
       {/* Left brand panel */}
       <div style={{ width: '42%', background: 'var(--primary)', display: 'flex', flexDirection: 'column', padding: '48px', position: 'relative', overflow: 'hidden' }} className="register-brand-panel">
-        <div style={{ position: 'absolute', inset: 0, opacity: 0.04, backgroundImage: 'repeating-linear-gradient(45deg,#fff 0,#fff 1px,transparent 0,transparent 50%)', backgroundSize: '20px 20px' }}/>
-        <div className="glass-blob" style={{ width: 260, height: 260, background: 'var(--secondary)', opacity: 0.18, top: 60, right: -80 }} />
-        <div className="glass-blob" style={{ width: 200, height: 200, background: 'var(--accent)', opacity: 0.12, bottom: -40, left: -40 }} />
+        <HeroSlideshow images={PANEL_PHOTOS} intervalMs={6500} />
         <div style={{ position: 'relative' }}>
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 64 }}>
-            <RFALogo/>
+            <RFALogo size={38}/>
             <div>
               <div style={{ color: 'white', fontWeight: 700, fontSize: '0.95rem', lineHeight: 1.25 }}>RoadSafe Namibia</div>
-              <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.72rem' }}>An official RFA platform</div>
+              <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.72rem' }}>An official RFA platform</div>
             </div>
           </Link>
           <h1 style={{ color: 'white', fontSize: '1.875rem', fontWeight: 800, lineHeight: 1.2, margin: '0 0 16px' }}>
             Join the RFA<br/>Community
           </h1>
-          <p style={{ color: 'rgba(255,255,255,0.58)', lineHeight: 1.75, fontSize: '0.9rem', margin: '0 0 40px' }}>
+          <p style={{ color: 'rgba(255,255,255,0.75)', lineHeight: 1.75, fontSize: '0.9rem', margin: '0 0 40px' }}>
             Help improve Namibia's road network by reporting defects directly through RoadSafe Namibia, the Road Fund Administration's citizen reporting platform.
           </p>
-          <div className="glass-dark" style={{ padding: '18px 20px', borderRadius: 12 }}>
+          <div style={{ padding: '18px 20px', borderRadius: 12, background: 'rgba(15,21,28,0.72)', backdropFilter: 'blur(16px) saturate(140%)', WebkitBackdropFilter: 'blur(16px) saturate(140%)', border: '1px solid rgba(255,255,255,0.12)' }}>
             {['Free to register and use', 'Reports reach the right team instantly', 'Track your report status in real-time', 'Available across all 14 regions'].map((item, i, arr) => (
-              <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: i < arr.length - 1 ? 12 : 0, fontSize: '0.875rem', color: 'rgba(255,255,255,0.75)' }}>
+              <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: i < arr.length - 1 ? 12 : 0, fontSize: '0.875rem', color: 'rgba(255,255,255,0.9)' }}>
                 <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </span>
@@ -82,8 +74,8 @@ export default function RegisterPage() {
             ))}
           </div>
         </div>
-        <div style={{ position: 'relative', marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 20 }}>
-          <p style={{ color: 'rgba(255,255,255,0.28)', fontSize: '0.72rem', margin: 0 }}>
+        <div style={{ position: 'relative', marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: 20 }}>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.72rem', margin: 0 }}>
             © 2025 RoadSafe Namibia · Operated by the RFA
           </p>
         </div>

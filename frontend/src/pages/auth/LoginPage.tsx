@@ -5,6 +5,15 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Eye, EyeOff, Lock, Mail, AlertCircle } from 'lucide-react';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
+import { RFALogo } from '../../components/common';
+import { HeroSlideshow, SlideImage } from '../../components/common/HeroSlideshow';
+
+const PANEL_PHOTOS: SlideImage[] = [
+  { url: 'https://images.unsplash.com/photo-1610477865545-37711c53144d?auto=format&fit=crop&w=900&q=80', credit: 'Zizi zi' },
+  { url: 'https://images.unsplash.com/photo-1593436878048-92622a77d315?auto=format&fit=crop&w=900&q=80', credit: 'Mika Baumeister' },
+  { url: 'https://images.unsplash.com/photo-1706712637075-f47fb47548f2?auto=format&fit=crop&w=900&q=80', credit: 'Tom Shamberger' },
+  { url: 'https://images.unsplash.com/photo-1529792083865-d23889753466?auto=format&fit=crop&w=900&q=80', credit: 'Nicolas J Leclercq' },
+];
 
 const demos = [
   { label: 'Admin',     email: 'admin@roadfund.na',    color: '#28384A' },
@@ -55,44 +64,27 @@ export default function LoginPage() {
         display:'flex', flexDirection:'column',
         padding:'48px', position:'relative', overflow:'hidden',
       }} className="login-brand-panel">
-        {/* Pattern overlay */}
-        <div style={{
-          position:'absolute', inset:0, opacity:0.05,
-          backgroundImage:`repeating-linear-gradient(45deg, #fff 0, #fff 1px, transparent 0, transparent 50%)`,
-          backgroundSize:'20px 20px',
-        }}/>
-        {/* Soft ambient color for the glass stats strip below to refract */}
-        <div className="glass-blob" style={{ width: 280, height: 280, background: 'var(--secondary)', opacity: 0.18, top: -80, right: -60 }} />
-        <div className="glass-blob" style={{ width: 220, height: 220, background: 'var(--accent)', opacity: 0.12, bottom: 60, left: -60 }} />
+        <HeroSlideshow images={PANEL_PHOTOS} intervalMs={6500} />
 
         <div style={{ position:'relative' }}>
           {/* Logo */}
           <Link to="/" style={{ display:'flex', alignItems:'center', gap:12, marginBottom:64 }}>
-            <span className="brand-glow" style={{ display: 'inline-flex', borderRadius: 10 }}>
-              <svg width="42" height="42" viewBox="0 0 42 42" fill="none">
-                <rect width="42" height="42" rx="10" fill="#3C7A5C"/>
-                <rect x="19.5" y="6"  width="3" height="6"  rx="1.5" fill="white"/>
-                <rect x="19.5" y="17" width="3" height="8"  rx="1.5" fill="white"/>
-                <rect x="19.5" y="30" width="3" height="6"  rx="1.5" fill="white"/>
-                <rect x="9"    y="6"  width="2" height="30" rx="1"   fill="rgba(255,255,255,0.3)"/>
-                <rect x="31"   y="6"  width="2" height="30" rx="1"   fill="rgba(255,255,255,0.3)"/>
-              </svg>
-            </span>
+            <RFALogo size={42}/>
             <div>
               <div style={{ color:'white', fontWeight:700, fontSize:'1rem', lineHeight:1.3 }}>RoadSafe Namibia</div>
-              <div style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.75rem' }}>An official RFA platform</div>
+              <div style={{ color:'rgba(255,255,255,0.6)', fontSize:'0.75rem' }}>An official RFA platform</div>
             </div>
           </Link>
 
           <h1 style={{ color:'white', fontSize:'2rem', fontWeight:800, lineHeight:1.25, marginBottom:16, marginTop:0 }}>
             Namibia's Road<br />Maintenance Portal
           </h1>
-          <p style={{ color:'rgba(255,255,255,0.6)', lineHeight:1.7, fontSize:'0.9rem', marginBottom:48, marginTop:0 }}>
+          <p style={{ color:'rgba(255,255,255,0.78)', lineHeight:1.7, fontSize:'0.9rem', marginBottom:48, marginTop:0 }}>
             Report road defects, track repair progress, and help build a safer road network across all 14 regions of Namibia.
           </p>
 
           {/* Stats strip */}
-          <div className="glass-dark" style={{ display:'flex', gap:32, flexWrap:'wrap', padding: '16px 20px', borderRadius: 12 }}>
+          <div style={{ display:'flex', gap:32, flexWrap:'wrap', padding: '16px 20px', borderRadius: 12, background: 'rgba(15,21,28,0.72)', backdropFilter: 'blur(16px) saturate(140%)', WebkitBackdropFilter: 'blur(16px) saturate(140%)', border: '1px solid rgba(255,255,255,0.12)' }}>
             {[
               [stats?.total_reports?.toLocaleString() ?? '—', 'Reports Processed'],
               [stats?.roads_repaired?.toLocaleString() ?? '—', 'Roads Repaired'],
@@ -109,7 +101,7 @@ export default function LoginPage() {
         {/* Bottom stamp */}
         <div style={{ position:'relative', marginTop:'auto', paddingTop:32 }}>
           <div style={{ borderTop:'1px solid rgba(255,255,255,0.12)', paddingTop:20 }}>
-            <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'0.75rem', margin:0 }}>
+            <p style={{ color:'rgba(255,255,255,0.55)', fontSize:'0.75rem', margin:0 }}>
               © 2025 RoadSafe Namibia · Operated by the Road Fund Administration<br />21 Sir Seretse Khama St, Windhoek
             </p>
           </div>
