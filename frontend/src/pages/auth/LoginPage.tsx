@@ -102,7 +102,7 @@ export default function LoginPage() {
         <div style={{ position:'relative', marginTop:'auto', paddingTop:32 }}>
           <div style={{ borderTop:'1px solid rgba(255,255,255,0.12)', paddingTop:20 }}>
             <p style={{ color:'rgba(255,255,255,0.55)', fontSize:'0.75rem', margin:0 }}>
-              © 2025 RoadSafe Namibia · Operated by the Road Fund Administration<br />21 Sir Seretse Khama St, Windhoek
+              © 2026 RoadSafe Namibia
             </p>
           </div>
         </div>

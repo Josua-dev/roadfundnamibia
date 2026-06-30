@@ -76,7 +76,7 @@ export default function RegisterPage() {
         </div>
         <div style={{ position: 'relative', marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: 20 }}>
           <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.72rem', margin: 0 }}>
-            © 2025 RoadSafe Namibia · Operated by the RFA
+            © 2026 RoadSafe Namibia
           </p>
         </div>
       </div>

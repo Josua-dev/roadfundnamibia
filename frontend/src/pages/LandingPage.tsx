@@ -110,10 +110,6 @@ export default function LandingPage() {
 
           {/* Copy */}
           <div>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(0,178,109,0.15)', border: '1px solid rgba(0,178,109,0.3)', color: 'var(--secondary)', borderRadius: 999, padding: '5px 14px', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 24 }}>
-              <span style={{ width: 6, height: 6, background: 'var(--secondary)', borderRadius: '50%', display: 'inline-block' }}/>
-              Official Government Platform
-            </div>
             <h1 style={{ color: 'white', fontSize: '2.75rem', fontWeight: 800, lineHeight: 1.15, margin: '0 0 20px', letterSpacing: '-0.025em' }}>
               Funding &amp; Maintaining<br/>
               <span style={{ color: 'var(--secondary)' }}>Namibia's Roads</span>
@@ -275,7 +271,7 @@ export default function LandingPage() {
           </div>
           <div style={{ borderTop: '1px solid var(--line)', paddingTop: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
             <span style={{ fontSize: '0.78rem', color: 'var(--text-3)' }}>
-              &copy; 2025 RoadSafe Namibia. Operated by the Road Fund Administration. All rights reserved.
+              &copy; 2026 RoadSafe Namibia. All rights reserved.
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', color: 'var(--secondary)', fontWeight: 600 }}>
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--secondary)', display: 'inline-block' }}/>
