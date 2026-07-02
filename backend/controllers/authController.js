@@ -4,6 +4,7 @@ const { validationResult } = require('express-validator');
 const pool = require('../config/database');
 const { auditLog } = require('../utils/auditLog');
 const { sendVerificationEmail } = require('../utils/email');
+const { setAuthCookie, clearAuthCookie } = require('../utils/authCookie');
 
 const VERIFICATION_MAX_ATTEMPTS = 5;
 const RESEND_COOLDOWN_SEC = 60;
@@ -124,7 +125,8 @@ exports.verifyEmail = async (req, res) => {
     await auditLog(user.id, 'VERIFY_EMAIL', 'users', user.id, req.ip);
 
     const token = generateToken(user.id);
-    res.json({ success: true, message: 'Email verified', token, user: { ...user, email_verified: true } });
+    setAuthCookie(res, token);
+    res.json({ success: true, message: 'Email verified', user: { ...user, email_verified: true } });
   } catch (error) {
     console.error('verifyEmail error:', error);
     res.status(500).json({ success: false, message: 'Verification failed' });
@@ -214,13 +216,24 @@ exports.login = async (req, res) => {
     await auditLog(user.id, 'LOGIN', 'users', user.id, req.ip);
 
     const token = generateToken(user.id);
+    setAuthCookie(res, token);
     const { password_hash, ...safeUser } = user;
 
-    res.json({ success: true, message: 'Login successful', token, user: safeUser });
+    res.json({ success: true, message: 'Login successful', user: safeUser });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ success: false, message: 'Login failed' });
   }
+};
+
+// ── LOGOUT ────────────────────────────────────────────────────
+// Previously logout was purely client-side (just delete the
+// localStorage token). With an httpOnly cookie the client can't
+// delete it itself -- only the server can, via Set-Cookie with an
+// expired date, which is what clearAuthCookie does.
+exports.logout = async (req, res) => {
+  clearAuthCookie(res);
+  res.json({ success: true, message: 'Logged out' });
 };
 
 // ── GET PROFILE ───────────────────────────────────────────────

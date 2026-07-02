@@ -9,37 +9,31 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
   headers: { 'Content-Type': 'application/json' },
   timeout: 15000,
+  // The JWT lives in an httpOnly cookie set by the server (see
+  // backend/utils/authCookie.js), not in localStorage/JS-readable
+  // storage. withCredentials makes the browser include that cookie
+  // on every request automatically -- no token ever needs to be
+  // read or attached here, which is the whole point: a script
+  // running on this page (including an injected XSS payload)
+  // literally cannot access the token's value.
+  withCredentials: true,
 });
 
-// Endpoints that are genuinely public -- never send a token on these,
-// and never treat a 401 from them as "your session expired" (a public
-// page has no session to expire in the first place).
+// Endpoints that are genuinely public -- a 401 from these isn't a
+// session expiry (a public page has no session to expire), it's just
+// that endpoint's own business logic (e.g. login with a wrong password).
 const PUBLIC_PATHS = ['/public/', '/auth/login', '/auth/register', '/auth/verify-email', '/auth/resend-verification'];
 const isPublicPath = (url?: string) => !!url && PUBLIC_PATHS.some(p => url.includes(p));
-
-// ── Request Interceptor: attach token (protected endpoints only) ──
-api.interceptors.request.use(
-  (config) => {
-    if (!isPublicPath(config.url)) {
-      const token = localStorage.getItem('rf_token');
-      if (token) config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
 
 // ── Response Interceptor: handle auth errors ──────────────────
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // A 401 from a public endpoint isn't a session expiry -- it's
-    // just that endpoint's own business logic (e.g. login with a
-    // wrong password). Only a 401 from a genuinely protected
-    // endpoint means "your token is invalid, force a fresh login."
+    // Only a 401 from a genuinely protected endpoint means "your
+    // session is invalid, force a fresh login." The cookie itself
+    // is cleared server-side (see POST /auth/logout) -- there's
+    // nothing for the client to clean up in storage anymore.
     if (error.response?.status === 401 && !isPublicPath(error.config?.url)) {
-      localStorage.removeItem('rf_token');
-      localStorage.removeItem('rf_user');
       if (!window.location.pathname.includes('/login')) {
         window.location.href = '/login';
       }

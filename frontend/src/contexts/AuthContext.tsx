@@ -4,11 +4,10 @@ import api from '../utils/api';
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  setSession: (token: string, user: User) => void;
+  setSession: (user: User) => void;
   logout: () => void;
   updateUser: (user: User) => void;
   hasRole: (...roles: UserRole[]) => boolean;
@@ -23,41 +22,53 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Bootstrap from localStorage
+  // The JWT lives in an httpOnly cookie now -- JavaScript literally
+  // cannot read it (that's the point: it's unreachable even to an
+  // XSS payload). So "is there a valid session" can no longer be
+  // answered by checking localStorage; it has to be answered by
+  // asking the server, which will succeed or 401 based on whatever
+  // cookie the browser actually sends. The user object itself isn't
+  // sensitive, so it's still cached in localStorage purely to avoid
+  // a blank flash while this request is in flight -- never trusted
+  // on its own, always reconciled against this response.
   useEffect(() => {
-    const storedToken = localStorage.getItem('rf_token');
-    const storedUser  = localStorage.getItem('rf_user');
-    if (storedToken && storedUser) {
-      try {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-      } catch {
-        localStorage.removeItem('rf_token');
-        localStorage.removeItem('rf_user');
-      }
+    const cached = localStorage.getItem('rf_user');
+    if (cached) {
+      try { setUser(JSON.parse(cached)); } catch { localStorage.removeItem('rf_user'); }
     }
-    setIsLoading(false);
+
+    api.get('/auth/profile')
+      .then(({ data }) => {
+        setUser(data.user);
+        localStorage.setItem('rf_user', JSON.stringify(data.user));
+      })
+      .catch(() => {
+        setUser(null);
+        localStorage.removeItem('rf_user');
+      })
+      .finally(() => setIsLoading(false));
   }, []);
 
-  const setSession = useCallback((newToken: string, newUser: User) => {
-    localStorage.setItem('rf_token', newToken);
+  const setSession = useCallback((newUser: User) => {
     localStorage.setItem('rf_user', JSON.stringify(newUser));
-    setToken(newToken);
     setUser(newUser);
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     const { data } = await api.post('/auth/login', { email, password });
-    setSession(data.token, data.user);
+    setSession(data.user);
   }, [setSession]);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('rf_token');
+    // Only the server can clear an httpOnly cookie (Set-Cookie with
+    // an expired date) -- there's no client-side equivalent of the
+    // old localStorage.removeItem('rf_token') to fall back on, so
+    // this request has to complete (or at least be attempted) for
+    // logout to actually take effect server-side.
+    api.post('/auth/logout').catch(() => {});
     localStorage.removeItem('rf_user');
-    setToken(null);
     setUser(null);
     window.location.href = '/login';
   }, []);
@@ -73,8 +84,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const value: AuthContextType = {
     user,
-    token,
-    isAuthenticated: !!user && !!token,
+    isAuthenticated: !!user,
     isLoading,
     login,
     setSession,

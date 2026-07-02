@@ -187,10 +187,12 @@ export const FilterGroup = ({ label, children }: { label: string; children: Reac
 );
 
 /* ── Attachment thumbnail — uploaded report photos are served from
-   a route that requires Authorization: Bearer <token>. A plain
-   <img src> or <a href> can't attach that header at all, so this
-   fetches the file through the authenticated api client and renders
-   it as a blob URL instead. Also normalizes file_path: it's stored
+   a route that requires authentication (an httpOnly cookie now,
+   previously an Authorization: Bearer header). A plain <img src> or
+   <a href> won't carry credentials for a cross-origin request by
+   default, so this fetches the file through the authenticated api
+   client (withCredentials: true) and renders it as a blob URL
+   instead. Also normalizes file_path: it's stored
    API-relative (e.g. "/uploads/x.jpg" or legacy "/api/uploads/x.jpg"),
    not as a full URL, so it has to go through the api client (which
    knows the real backend origin) rather than being used directly. ── */

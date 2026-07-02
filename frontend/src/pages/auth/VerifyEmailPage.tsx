@@ -53,7 +53,7 @@ export default function VerifyEmailPage() {
     setError(''); setLoading(true);
     try {
       const { data } = await api.post('/auth/verify-email', { email, code });
-      setSession(data.token, data.user);
+      setSession(data.user);
       toast.success('Email verified — welcome to RoadSafe Namibia!');
       navigate('/dashboard');
     } catch (err: any) {

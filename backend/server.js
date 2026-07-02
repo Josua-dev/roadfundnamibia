@@ -2,6 +2,7 @@ const express    = require('express');
 const cors       = require('cors');
 const helmet     = require('helmet');
 const rateLimit  = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
 const path       = require('path');
 require('dotenv').config();
 
@@ -89,6 +90,7 @@ app.use('/api/reports', (req, res, next) => {
 // ── Body parsing (tight limits — files go through Multer) ─────
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(cookieParser());
 
 // ── Serve uploads securely via authenticated route ────────────
 // Raw static /uploads is removed — access is gated by auth middleware

@@ -1,11 +1,11 @@
 const jwt = require('jsonwebtoken');
 const pool = require('../config/database');
+const { COOKIE_NAME } = require('../utils/authCookie');
 
 // Verify JWT token
 const authenticateToken = async (req, res, next) => {
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = req.cookies?.[COOKIE_NAME];
 
     if (!token) {
       return res.status(401).json({ success: false, message: 'Access token required' });

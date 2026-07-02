@@ -28,5 +28,6 @@ router.post('/resend-verification', [
 router.get('/profile', authenticateToken, ctrl.getProfile);
 router.put('/profile', authenticateToken, ctrl.updateProfile);
 router.put('/change-password', authenticateToken, ctrl.changePassword);
+router.post('/logout', ctrl.logout);
 
 module.exports = router;
