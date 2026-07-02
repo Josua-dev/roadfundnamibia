@@ -89,6 +89,9 @@ export default function LandingPage() {
             </div>
           </Link>
           <nav style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <Link to="/map" style={{ padding: '9px 16px', fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-2)' }}>
+              Live Map
+            </Link>
             <Link to="/impact" style={{ padding: '9px 16px', fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-2)' }}>
               Our Impact
             </Link>

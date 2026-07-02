@@ -8,6 +8,7 @@ import DashboardLayout from './components/layout/DashboardLayout';
 // Public pages
 import LandingPage from './pages/LandingPage';
 import ImpactPage from './pages/ImpactPage';
+import PublicMapPage from './pages/PublicMapPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import VerifyEmailPage from './pages/auth/VerifyEmailPage';
@@ -67,6 +68,7 @@ function App() {
           <Route element={<PublicLayout />}>
             <Route index element={<LandingPage />} />
             <Route path="impact" element={<ImpactPage />} />
+            <Route path="map" element={<PublicMapPage />} />
             <Route path="login" element={<LoginPage />} />
             <Route path="register" element={<RegisterPage />} />
             <Route path="verify-email" element={<VerifyEmailPage />} />

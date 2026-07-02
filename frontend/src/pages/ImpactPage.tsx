@@ -38,6 +38,9 @@ export default function ImpactPage() {
             </div>
           </Link>
           <nav style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <Link to="/map" style={{ padding: '9px 16px', fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-2)' }}>
+              Live Map
+            </Link>
             <Link to="/login" style={{ padding: '9px 20px', borderRadius: 8, border: '1.5px solid var(--line)', fontWeight: 600, fontSize: '0.875rem', color: 'var(--primary)', background: 'transparent' }}>
               Sign In
             </Link>

@@ -65,6 +65,41 @@ exports.getImpact = async (req, res) => {
   }
 };
 
+// ── PUBLIC LIVE MAP (no auth) ────────────────────────────────────
+// Deliberately more conservative than the authenticated /reports/map:
+// no free-text address (street-level text can be more identifying
+// than raw coordinates), and coordinates rounded to ~3 decimal places
+// (~100m) rather than the full ~1m precision stored internally --
+// still shows "there's a problem on this road" without pinpointing
+// an exact property to an anonymous visitor.
+exports.getMapReports = async (req, res) => {
+  try {
+    const { region_id, status, severity } = req.query;
+    let where = ['r.latitude IS NOT NULL AND r.longitude IS NOT NULL'];
+    let params = [];
+
+    if (region_id) { params.push(region_id); where.push(`r.region_id = $${params.length}`); }
+    if (status) { params.push(status); where.push(`r.status = $${params.length}`); }
+    if (severity) { params.push(severity); where.push(`r.severity = $${params.length}`); }
+
+    const result = await pool.query(
+      `SELECT r.id, r.report_number, r.issue_type, r.severity, r.status,
+              ROUND(r.latitude::numeric, 3) AS latitude,
+              ROUND(r.longitude::numeric, 3) AS longitude,
+              r.created_at, rg.name AS region_name
+       FROM reports r
+       JOIN regions rg ON r.region_id = rg.id
+       WHERE ${where.join(' AND ')}`,
+      params
+    );
+
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error('getMapReports error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch map data' });
+  }
+};
+
 // ── PUBLIC PHOTO SERVING (no auth) ──────────────────────────────
 // Deliberately separate from the authenticated /api/uploads route.
 // Only serves a file if it's actually attached to a report that's
