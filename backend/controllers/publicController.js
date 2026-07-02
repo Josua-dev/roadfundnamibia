@@ -107,6 +107,21 @@ exports.getMapReports = async (req, res) => {
 // in-progress or otherwise-private reports, regardless of filename
 // guessing. That's the whole privacy boundary, so it's enforced at
 // the query level, not just by routing.
+// ── PUBLIC REGIONS (no auth) ─────────────────────────────────────
+// Region names/codes aren't sensitive -- this exists so pages like
+// the public map's region filter don't need the authenticated
+// /api/regions endpoint at all, keeping the boundary clean rather
+// than special-casing that one path in the frontend's auth interceptor.
+exports.getRegions = async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, name, code FROM regions ORDER BY name ASC');
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error('getPublicRegions error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch regions' });
+  }
+};
+
 exports.getPublicPhoto = async (req, res) => {
   try {
     const filename = path.basename(req.params.filename);

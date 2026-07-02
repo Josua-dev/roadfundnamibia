@@ -11,11 +11,19 @@ const api = axios.create({
   timeout: 15000,
 });
 
-// ── Request Interceptor: attach token ─────────────────────────
+// Endpoints that are genuinely public -- never send a token on these,
+// and never treat a 401 from them as "your session expired" (a public
+// page has no session to expire in the first place).
+const PUBLIC_PATHS = ['/public/', '/auth/login', '/auth/register', '/auth/verify-email', '/auth/resend-verification'];
+const isPublicPath = (url?: string) => !!url && PUBLIC_PATHS.some(p => url.includes(p));
+
+// ── Request Interceptor: attach token (protected endpoints only) ──
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('rf_token');
-    if (token) config.headers.Authorization = `Bearer ${token}`;
+    if (!isPublicPath(config.url)) {
+      const token = localStorage.getItem('rf_token');
+      if (token) config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => Promise.reject(error)
@@ -25,8 +33,11 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid
+    // A 401 from a public endpoint isn't a session expiry -- it's
+    // just that endpoint's own business logic (e.g. login with a
+    // wrong password). Only a 401 from a genuinely protected
+    // endpoint means "your token is invalid, force a fresh login."
+    if (error.response?.status === 401 && !isPublicPath(error.config?.url)) {
       localStorage.removeItem('rf_token');
       localStorage.removeItem('rf_user');
       if (!window.location.pathname.includes('/login')) {

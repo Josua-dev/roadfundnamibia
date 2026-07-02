@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { ChevronRight, X, RefreshCw } from 'lucide-react';
 import api from '../utils/api';
-import { useRegions } from '../hooks/useRegions';
 import { RFALogo } from '../components/common';
 import { timeAgo, statusConfig, issueTypeConfig } from '../utils/helpers';
 
@@ -38,7 +37,11 @@ export default function PublicMapPage() {
     },
     refetchInterval: 60_000, // a public live map should actually stay live
   });
-  const { data: regions } = useRegions();
+  const { data: regions } = useQuery({
+    queryKey: ['public-regions'],
+    queryFn: async () => (await api.get('/public/regions')).data.data,
+    staleTime: 1000 * 60 * 30,
+  });
 
   useEffect(() => {
     if (!mapRef.current || leafletMap.current) return;
@@ -108,7 +111,7 @@ export default function PublicMapPage() {
             <option value="">All statuses</option>{['reported', 'under_review', 'verified', 'assigned', 'in_progress', 'completed'].map(s => <option key={s} value={s}>{statusConfig[s as keyof typeof statusConfig]?.label}</option>)}
           </select>
           <select value={filters.region_id} onChange={e => setFilters(f => ({ ...f, region_id: e.target.value }))} className="input input-sm" style={{ width: 'auto' }}>
-            <option value="">All regions</option>{(regions || []).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+            <option value="">All regions</option>{(regions || []).map((r: any) => <option key={r.id} value={r.id}>{r.name}</option>)}
           </select>
           <button onClick={() => refetch()} className="btn-icon" style={{ marginLeft: 'auto' }}><RefreshCw size={14} className={isFetching ? 'skel' : ''} /></button>
           <span className="text-meta">{reports?.length ?? 0} active reports</span>
