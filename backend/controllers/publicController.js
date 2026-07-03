@@ -1,6 +1,6 @@
 const pool = require('../config/database');
 const path = require('path');
-const fs = require('fs');
+const { downloadFile } = require('../utils/storage');
 
 // ── PUBLIC STATS (no auth — landing page) ───────────────────────
 // Intentionally minimal: counts only, nothing that could leak
@@ -134,11 +134,9 @@ exports.getPublicPhoto = async (req, res) => {
     if (!result.rows.length) {
       return res.status(404).json({ success: false, message: 'Not found' });
     }
-    const filePath = path.join(__dirname, '..', 'uploads', filename);
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ success: false, message: 'File not found' });
-    }
-    res.sendFile(filePath);
+    const { buffer, contentType } = await downloadFile(filename);
+    res.setHeader('Content-Type', contentType || 'application/octet-stream');
+    res.send(buffer);
   } catch (error) {
     console.error('getPublicPhoto error:', error);
     res.status(500).json({ success: false, message: 'Could not serve file' });

@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const { validationResult } = require('express-validator');
 const pool = require('../config/database');
 const { auditLog } = require('../utils/auditLog');
 
@@ -49,6 +50,10 @@ exports.getAllUsers = async (req, res) => {
 
 // ── CREATE USER (admin) ───────────────────────────────────────
 exports.createUser = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
   try {
     const { full_name, email, password, role, region_id, phone } = req.body;
 
@@ -108,6 +113,10 @@ exports.toggleStatus = async (req, res) => {
 
 // ── RESET PASSWORD (admin) ────────────────────────────────────
 exports.resetPassword = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
   try {
     const { new_password } = req.body;
     const salt = await bcrypt.genSalt(12);

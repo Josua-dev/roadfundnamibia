@@ -41,7 +41,7 @@ export default function AdminUsers() {
   const createMutation = useMutation({
     mutationFn: async () => { await api.post('/users', newUser); },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-users'] }); setCreateOpen(false); setNewUser({ full_name: '', email: '', password: '', role: 'citizen', phone: '', region_id: '' }); toast.success('User created'); },
-    onError: (e: any) => toast.error(e.response?.data?.message || 'Failed to create user'),
+    onError: (e: any) => toast.error(e.response?.data?.message || e.response?.data?.errors?.[0]?.msg || 'Failed to create user'),
   });
 
   const users: User[] = data?.data || [];

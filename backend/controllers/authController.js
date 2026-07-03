@@ -278,6 +278,10 @@ exports.updateProfile = async (req, res) => {
 
 // ── CHANGE PASSWORD ───────────────────────────────────────────
 exports.changePassword = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
   const { current_password, new_password } = req.body;
 
   try {

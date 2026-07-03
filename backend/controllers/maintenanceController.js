@@ -2,6 +2,7 @@ const pool = require('../config/database');
 const { buildSetClause } = require('../utils/sqlHelpers');
 const { auditLog } = require('../utils/auditLog');
 const { notifyUser } = require('../utils/notify');
+const { uploadFile } = require('../utils/storage');
 
 // ── GET ALL TASKS ─────────────────────────────────────────────
 exports.getAllTasks = async (req, res) => {
@@ -200,9 +201,10 @@ exports.uploadCompletionPhoto = async (req, res) => {
 
     const reportId = tasks.rows[0].report_id;
     for (const file of req.files) {
+      const filename = await uploadFile(file);
       await pool.query(
         "INSERT INTO attachments (report_id, file_name, file_path, file_size, mime_type, stage, uploaded_by) VALUES ($1, $2, $3, $4, $5, 'completed', $6)",
-        [reportId, file.originalname, `/api/uploads/${file.filename}`, file.size, file.mimetype, req.user.id]
+        [reportId, file.originalname, `/api/uploads/${filename}`, file.size, file.mimetype, req.user.id]
       );
     }
 

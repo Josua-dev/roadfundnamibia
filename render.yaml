@@ -42,6 +42,14 @@ services:
       # as ALLOWED_ORIGINS if Render renamed it.
       - key: FRONTEND_URL
         value: https://roadfund-frontend.onrender.com
+      # File storage (Supabase Storage, same project as the database).
+      # Paste from Supabase Dashboard > Project Settings > API.
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: report-photos
       # Predicted from the frontend service name below. Render usually
       # assigns exactly https://<name>.onrender.com — if it picked a
       # different subdomain (e.g. due to a name clash), update this

@@ -1,24 +1,12 @@
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 
-const UPLOADS_DIR = path.join(__dirname, '../uploads');
-
-// Ensure uploads directory exists
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, UPLOADS_DIR);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `rf-${uniqueSuffix}${ext}`);
-  },
-});
+// Files are kept in memory (as a Buffer) rather than written to local
+// disk. Render's free-tier disk is ephemeral -- wiped on every
+// redeploy -- so anything written there was never actually durable.
+// Each controller that receives an upload forwards the buffer
+// straight to Supabase Storage (see utils/storage.js) instead.
+const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
   const allowed = /jpeg|jpg|png|gif|webp|pdf/;

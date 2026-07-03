@@ -4,11 +4,12 @@ const router = express.Router();
 const { body } = require('express-validator');
 const ctrl = require('../controllers/authController');
 const { authenticateToken } = require('../middleware/auth');
+const { passwordStrength } = require('../utils/validators');
 
 router.post('/register', [
   body('full_name').trim().notEmpty().withMessage('Full name is required'),
   body('email').isEmail().withMessage('Valid email required'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  passwordStrength('password'),
 ], ctrl.register);
 
 router.post('/login', [
@@ -27,7 +28,10 @@ router.post('/resend-verification', [
 
 router.get('/profile', authenticateToken, ctrl.getProfile);
 router.put('/profile', authenticateToken, ctrl.updateProfile);
-router.put('/change-password', authenticateToken, ctrl.changePassword);
+router.put('/change-password', authenticateToken, [
+  body('current_password').notEmpty().withMessage('Current password is required'),
+  passwordStrength('new_password'),
+], ctrl.changePassword);
 router.post('/logout', ctrl.logout);
 
 module.exports = router;

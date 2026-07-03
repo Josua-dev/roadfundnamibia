@@ -118,12 +118,15 @@ export default function RegisterPage() {
                 <Lock size={15} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: 'var(--n-400)', pointerEvents: 'none' }}/>
                 <input type={showPw ? 'text' : 'password'} value={form.password} onChange={set('password')}
                   className="input" style={{ paddingLeft: 38, paddingRight: 40 }}
-                  placeholder="Min. 6 characters" required minLength={6} />
+                  placeholder="Create a password" required minLength={8} />
                 <button type="button" onClick={() => setShowPw(!showPw)}
                   style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--n-400)', padding: 0, display: 'flex' }}>
                   {showPw ? <EyeOff size={16}/> : <Eye size={16}/>}
                 </button>
               </div>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-3)', margin: '5px 0 0' }}>
+                At least 8 characters, with an uppercase letter, a lowercase letter, and a number.
+              </p>
             </div>
 
             <button type="submit" disabled={loading} className="btn btn-cta btn-block btn-lg" style={{ marginTop: 8 }}>

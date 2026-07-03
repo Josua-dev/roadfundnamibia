@@ -34,11 +34,11 @@ export default function ProfilePage() {
   const pwMutation = useMutation({
     mutationFn: async () => { await api.put('/auth/change-password', { current_password: pwForm.current_password, new_password: pwForm.new_password }); },
     onSuccess: () => { toast.success('Password changed'); setPwForm({ current_password: '', new_password: '', confirm_password: '' }); },
-    onError: (e: any) => toast.error(e.response?.data?.message || 'Password change failed'),
+    onError: (e: any) => toast.error(e.response?.data?.message || e.response?.data?.errors?.[0]?.msg || 'Password change failed'),
   });
   const submitPw = () => {
     setPwError('');
-    if (pwForm.new_password.length < 6) return setPwError('New password must be at least 6 characters');
+    if (pwForm.new_password.length < 8) return setPwError('New password must be at least 8 characters, with an uppercase letter, a lowercase letter, and a number');
     if (pwForm.new_password !== pwForm.confirm_password) return setPwError('Passwords do not match');
     pwMutation.mutate();
   };

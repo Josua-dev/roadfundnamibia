@@ -2,6 +2,7 @@ const pool = require('../config/database');
 const { buildSetClause } = require('../utils/sqlHelpers');
 const { auditLog } = require('../utils/auditLog');
 const { notifyUser } = require('../utils/notify');
+const { uploadFile } = require('../utils/storage');
 
 // Generate report number — race-condition-safe via INSERT ... ON CONFLICT
 // (the report_sequences table is created by database/schema.sql; this
@@ -210,12 +211,14 @@ exports.createReport = async (req, res) => {
 
     const reportId = result.rows[0].id;
 
-    // Save attachments
+    // Save attachments -- uploaded to Supabase Storage (not local
+    // disk, which is wiped on every Render redeploy)
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
+        const filename = await uploadFile(file);
         await client.query(
           'INSERT INTO attachments (report_id, file_name, file_path, file_size, mime_type, uploaded_by) VALUES ($1, $2, $3, $4, $5, $6)',
-          [reportId, file.originalname, `/api/uploads/${file.filename}`, file.size, file.mimetype, req.user.id]
+          [reportId, file.originalname, `/api/uploads/${filename}`, file.size, file.mimetype, req.user.id]
         );
       }
     }
