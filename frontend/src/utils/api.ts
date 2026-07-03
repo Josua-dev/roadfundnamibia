@@ -23,17 +23,25 @@ const api = axios.create({
 // session expiry (a public page has no session to expire), it's just
 // that endpoint's own business logic (e.g. login with a wrong password).
 const PUBLIC_PATHS = ['/public/', '/auth/login', '/auth/register', '/auth/verify-email', '/auth/resend-verification'];
-const isPublicPath = (url?: string) => !!url && PUBLIC_PATHS.some(p => url.includes(p));
+// AuthContext calls this on EVERY page load (including public pages)
+// to silently check "is there a valid session?" -- for any anonymous
+// visitor, a 401 here is the normal, expected answer, not a sign of a
+// dead session. AuthContext's own .catch() already handles that
+// outcome gracefully (sets user to null); the interceptor doesn't
+// need to react to it, and definitely shouldn't force-redirect.
+const NO_REDIRECT_PATHS = [...PUBLIC_PATHS, '/auth/profile'];
+const shouldSkipRedirect = (url?: string) => !!url && NO_REDIRECT_PATHS.some(p => url.includes(p));
 
 // ── Response Interceptor: handle auth errors ──────────────────
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Only a 401 from a genuinely protected endpoint means "your
-    // session is invalid, force a fresh login." The cookie itself
-    // is cleared server-side (see POST /auth/logout) -- there's
-    // nothing for the client to clean up in storage anymore.
-    if (error.response?.status === 401 && !isPublicPath(error.config?.url)) {
+    // Only a 401 from a genuinely protected endpoint, outside the
+    // silent-bootstrap-check exemption above, means "your session is
+    // invalid, force a fresh login." The cookie itself is cleared
+    // server-side (see POST /auth/logout) -- there's nothing for the
+    // client to clean up in storage anymore.
+    if (error.response?.status === 401 && !shouldSkipRedirect(error.config?.url)) {
       if (!window.location.pathname.includes('/login')) {
         window.location.href = '/login';
       }
