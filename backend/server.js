@@ -52,13 +52,21 @@ app.use(cors({
 }));
 
 // ── Rate limiting ─────────────────────────────────────────────
-// Strict limit for auth endpoints (brute-force protection)
+// Strict limit for auth endpoints (brute-force protection).
+// GET /auth/profile is exempted below: it's a silent "is there a
+// valid session?" check the frontend fires on EVERY page load (see
+// AuthContext), not a login attempt -- it used to share this budget,
+// which meant just having a few tabs open could exhaust 10 requests
+// per 15 minutes before a real login attempt ever happened, showing
+// "too many attempts" to someone who'd never actually tried to log
+// in. It gets apiLimiter's much higher ceiling instead, further down.
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,   // 15 minutes
   max: 10,
   message: { success: false, message: 'Too many attempts. Try again in 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.method === 'GET' && req.path === '/profile',
 });
 
 // General API limit (generous — for dashboard polling etc.)
