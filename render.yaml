@@ -32,7 +32,17 @@ services:
     plan: free
     # No rootDir: the build needs access to both frontend/ and
     # backend/ from the repo root.
-    buildCommand: cd frontend && npm install && npm run build && cd ../backend && npm install
+    # --include=dev is required here: NODE_ENV=production (below,
+    # needed at runtime) is applied during the build too, and npm's
+    # default behavior in that case is to silently skip
+    # devDependencies -- which is exactly where @types/react,
+    # typescript, and vite live. Without this flag, `tsc` fails with
+    # a wall of "JSX.IntrinsicElements does not exist" errors, since
+    # the JSX type augmentation @types/react provides never gets
+    # installed. The backend's own `npm install` doesn't need this:
+    # its only devDependency is nodemon, a dev-only convenience tool
+    # that's correctly never needed at runtime.
+    buildCommand: cd frontend && npm install --include=dev && npm run build && cd ../backend && npm install
     startCommand: node backend/server.js
     healthCheckPath: /api/health
     envVars:
