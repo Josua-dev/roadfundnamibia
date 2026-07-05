@@ -287,33 +287,38 @@ roadfund/
 
 ## Deploying to Production
 
-This deploys for **$0/month** using free tiers: [Supabase](https://supabase.com) for the database (already set up — see below), [Render](https://render.com) for hosting both the backend and frontend.
+This deploys for **$0/month** using free tiers: [Supabase](https://supabase.com) for the database and file storage (already set up — see below), [Render](https://render.com) for hosting the whole app as one service.
 
 > Render's free web services sleep after 15 minutes of inactivity and take ~30s to wake back up on the next request. Fine for a demo or low-traffic deployment; upgrade to a paid Render plan later if you need it always-on.
+
+> **Why one service, not two?** Earlier versions of this project ran the frontend and backend as two separate Render services. That doesn't work reliably: `onrender.com` is on the browser's "Public Suffix List," so two different `*.onrender.com` services are treated as **completely separate websites**, not two parts of the same app — which made the login cookie a genuine third-party cookie, exactly the kind Chrome and Safari increasingly block by default. The backend now serves the built frontend directly, so everything runs from one origin and this problem doesn't exist structurally.
 
 ### 1. Push this project to GitHub
 Render's Blueprint deploys (used below) need a Git repo to deploy from.
 
-### 2. Database — already done
-A Supabase project named `roadfund` (Frankfurt region) already has the schema applied and demo data seeded. Just grab its connection string:
-1. https://supabase.com/dashboard → `roadfund` project → **Project Settings → Database**
-2. Under **Connection string**, copy the **Direct connection** URI (reset the database password first if one isn't shown — Supabase only displays it once)
+### 2. Database & file storage — already done
+A Supabase project named `roadfund` (Frankfurt region) already has the schema applied, demo data seeded, and a private `report-photos` storage bucket created. You need two things from it:
+
+1. **Connection string**: https://supabase.com/dashboard → `roadfund` project → **Connect** → copy the **Session pooler** URI (not "Direct connection" — Render's network doesn't support its IPv6-only default, and this was already worked out earlier)
+2. **Storage keys**: same project → **Project Settings → API Keys** → copy the **`secret`** key (Supabase's current name for what used to be called `service_role` — same thing, bypasses Row Level Security, must never be exposed to the frontend)
 
 ### 3. Deploy to Render with the included Blueprint
-This repo includes a `render.yaml` at the project root that defines both services (backend web service + frontend static site) in one shot.
+This repo includes a `render.yaml` at the project root defining a single web service that builds and serves both the frontend and backend together.
 
 1. In the Render Dashboard: **New → Blueprint**, connect your GitHub repo
-2. Render reads `render.yaml` and shows you both services it's about to create
-3. When prompted, paste your **Supabase connection string** in for the backend's `DATABASE_URL` (the Blueprint marks it `sync: false` so it's never committed to your repo)
+2. Render reads `render.yaml` and shows you the one service it's about to create
+3. When prompted, paste in:
+   - `DATABASE_URL` — the Supabase session-pooler string from Step 2
+   - `SUPABASE_URL` — `https://<your-project-ref>.supabase.co`
+   - `SUPABASE_SERVICE_ROLE_KEY` — the `secret` key from Step 2
 4. Click **Deploy Blueprint**
 
-Render builds and deploys both services. The blueprint pre-wires `VITE_API_URL` (frontend → backend) and `ALLOWED_ORIGINS` (backend's CORS allowlist → frontend) based on Render's predictable `https://<service-name>.onrender.com` URL pattern. If Render had to rename either service (e.g. the name was already taken in your account), open that service's **Environment** tab, fix the URL, and trigger a manual redeploy.
+Render builds the frontend, installs the backend, and serves both from one URL. `ALLOWED_ORIGINS`/`FRONTEND_URL` are pre-wired to Render's predictable `https://roadfund.onrender.com` pattern — if Render had to rename the service (e.g. the name was already taken in your account), open its **Environment** tab, fix both values, and trigger a manual redeploy.
+
+**If you deployed the old two-service version previously:** delete the old `roadfund-frontend` static site in the Render dashboard once this consolidated service is live — it's no longer used, and leaving both running just means login won't work reliably on the old one.
 
 ### 4. Verify
-Visit your frontend's `.onrender.com` URL and log in with one of the [demo accounts](#demo-login-credentials).
-
-### A note on file uploads
-Render's free web services have an **ephemeral filesystem** — anything written to `backend/uploads/` (photos attached to reports) is wiped on every deploy and restart. This mirrors how most free-tier PaaS hosting works (Heroku, Railway, Fly.io free tiers behave the same way). It's fine for a demo, but for real persistent file storage you'd want object storage like Cloudflare R2, Backblaze B2, AWS S3, or Supabase Storage itself — happy to wire that up if/when you need it.
+Visit your service's `.onrender.com` URL and log in with one of the [demo accounts](#demo-login-credentials).
 
 ---
 

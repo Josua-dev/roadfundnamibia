@@ -21,14 +21,22 @@ const publicRoutes       = require('./routes/public');
 const app = express();
 
 // ── Security headers (helmet) ────────────────────────────────
+// This CSP now also governs the frontend's own HTML (see the static
+// serving block near the bottom of this file) -- previously it only
+// ever applied to this server's own JSON API responses, since the
+// frontend was served entirely separately by Render's static
+// hosting. Every external resource the frontend actually loads has
+// to be explicitly allowed here or the browser will silently block
+// it: Unsplash photos (hero slideshows), CARTO map tiles (Leaflet),
+// unpkg's Leaflet stylesheet, and Google Fonts.
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'same-site' },
+  crossOriginResourcePolicy: { policy: 'same-origin' },
   contentSecurityPolicy: {
     directives: {
       defaultSrc:  ["'self'"],
       scriptSrc:   ["'self'"],
-      styleSrc:    ["'self'", "'unsafe-inline'"],
-      imgSrc:      ["'self'", 'data:', 'blob:'],
+      styleSrc:    ["'self'", "'unsafe-inline'", 'https://unpkg.com', 'https://fonts.googleapis.com'],
+      imgSrc:      ["'self'", 'data:', 'blob:', 'https://images.unsplash.com', 'https://*.basemaps.cartocdn.com'],
       connectSrc:  ["'self'"],
       fontSrc:     ["'self'", 'https://fonts.gstatic.com'],
       objectSrc:   ["'none'"],
@@ -125,10 +133,43 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// ── 404 ───────────────────────────────────────────────────────
-app.use((req, res) => {
+// ── API 404 ──────────────────────────────────────────────────
+// Scoped to /api/* specifically, and registered before the frontend
+// static/catch-all block below -- an unmatched API call must still
+// get a clean JSON 404, not the frontend's index.html.
+app.use('/api', (req, res) => {
   res.status(404).json({ success: false, message: 'Route not found' });
 });
+
+// ── Serve the frontend (single-origin deployment) ──────────────
+// This server now serves the built React app directly, instead of
+// the frontend being deployed as a separate Render static site on
+// its own subdomain. That split used to make the auth cookie a
+// genuinely cross-site (third-party) cookie -- onrender.com is on
+// the Public Suffix List, so two *.onrender.com services are
+// treated as entirely separate sites by the browser, and browsers
+// increasingly block or restrict exactly that kind of cookie.
+// Serving both from one origin eliminates that failure mode
+// structurally rather than working around it.
+//
+// Guarded by fs.existsSync so local development is unaffected: in
+// dev the frontend runs as its own Vite dev server on port 5173
+// (see frontend/vite.config.ts's proxy), and frontend/dist won't
+// exist unless someone has explicitly run a production build.
+const fs = require('fs');
+const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
+
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  // SPA catch-all: any non-API route (e.g. /dashboard/reports/5)
+  // gets index.html, and React Router takes over from there.
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+  console.log('  Serving frontend from', frontendDist);
+} else {
+  console.log('  frontend/dist not found -- running API-only (expected in local dev)');
+}
 
 // ── Global error handler ──────────────────────────────────────
 app.use((err, req, res, next) => {

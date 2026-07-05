@@ -1,29 +1,45 @@
-# Render Blueprint — deploys both services in one go.
+# Render Blueprint — one service, deploys the whole app.
 # In the Render Dashboard: New > Blueprint > connect this repo.
 # Docs: https://render.com/docs/infrastructure-as-code
 #
+# IMPORTANT: this project used to run as two separate services (a
+# Node backend + a static-site frontend). They've been consolidated
+# into one: the backend now serves the frontend's built files
+# directly (see the static-serving block near the bottom of
+# backend/server.js). This isn't just simplification -- it fixes a
+# real bug: onrender.com is on the Public Suffix List, so two
+# *.onrender.com services are treated as fully separate *sites* by
+# the browser, which made the login cookie a genuine third-party
+# cookie -- exactly the kind Chrome and Safari increasingly block or
+# restrict by default. Serving everything from one origin eliminates
+# that failure mode structurally.
+#
+# If you deployed the old two-service version previously, delete the
+# old "roadfund-frontend" static site in the Render dashboard after
+# this one is live -- it's no longer used.
+#
 # The database itself is NOT defined here — this project already has a
-# Supabase Postgres project ("roadfund") with the schema applied and demo
-# data seeded. Grab its connection string from Project Settings > Database
-# > Connection string ("Direct connection") and paste it into DATABASE_URL
-# when prompted during Blueprint creation. See the main README's
-# "Deploying to Production" section for the full walkthrough.
+# Supabase Postgres project ("roadfund") with the schema applied and seed
+# data. Grab its connection string from Project Settings > Database >
+# Connection string ("Session pooler" -- Render's network doesn't support
+# the Direct connection's IPv6 default) and paste it into DATABASE_URL
+# when prompted during Blueprint creation.
 
 services:
-  # ── Backend: Node/Express API ──────────────────────────────────
   - type: web
-    name: roadfund-backend
+    name: roadfund
     runtime: node
     plan: free
-    rootDir: backend
-    buildCommand: npm install
-    startCommand: npm start
+    # No rootDir: the build needs access to both frontend/ and
+    # backend/ from the repo root.
+    buildCommand: cd frontend && npm install && npm run build && cd ../backend && npm install
+    startCommand: node backend/server.js
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        sync: false   # paste your Neon connection string here (include ?sslmode=require)
+        sync: false   # paste your Supabase session-pooler connection string here
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRES_IN
@@ -38,42 +54,23 @@ services:
         sync: false
       - key: EMAIL_FROM
         value: RoadSafe Namibia <onboarding@resend.dev>
-      # Predicted from the frontend service name below — same caveat
-      # as ALLOWED_ORIGINS if Render renamed it.
-      - key: FRONTEND_URL
-        value: https://roadfund-frontend.onrender.com
       # File storage (Supabase Storage, same project as the database).
-      # Paste from Supabase Dashboard > Project Settings > API.
+      # Paste from Supabase Dashboard > Project Settings > API Keys
+      # (the "secret" key -- Supabase's newer naming for what used to
+      # be called service_role).
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: SUPABASE_STORAGE_BUCKET
         value: report-photos
-      # Predicted from the frontend service name below. Render usually
-      # assigns exactly https://<name>.onrender.com — if it picked a
-      # different subdomain (e.g. due to a name clash), update this
-      # value in the Render dashboard and redeploy.
+      # Everything is one origin now, so this is mostly a formality --
+      # kept so CORS still works correctly for local dev against a
+      # deployed backend, or any other client that isn't this same
+      # frontend. Render usually assigns exactly
+      # https://<name>.onrender.com; if it picked something else
+      # (e.g. a name clash), update this in the dashboard and redeploy.
       - key: ALLOWED_ORIGINS
-        value: https://roadfund-frontend.onrender.com
-
-  # ── Frontend: React/Vite static site ────────────────────────────
-  - type: web
-    name: roadfund-frontend
-    runtime: static
-    rootDir: frontend
-    buildCommand: npm install && npm run build
-    staticPublishPath: dist
-    envVars:
-      # Same prediction caveat as ALLOWED_ORIGINS above — if Render
-      # renamed the backend service's subdomain, update this and
-      # trigger a manual redeploy (static sites bake env vars in at
-      # build time, so changing this requires a rebuild).
-      - key: VITE_API_URL
-        value: https://roadfund-backend.onrender.com/api
-    routes:
-      # SPA fallback so React Router's client-side routes
-      # (e.g. /dashboard/reports/5) don't 404 on refresh.
-      - type: rewrite
-        source: /*
-        destination: /index.html
+        value: https://roadfund.onrender.com
+      - key: FRONTEND_URL
+        value: https://roadfund.onrender.com
