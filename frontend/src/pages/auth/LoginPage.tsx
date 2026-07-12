@@ -163,7 +163,12 @@ export default function LoginPage() {
             </div>
 
             <div className="field">
-              <label className="field-label">Password</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                <label className="field-label" style={{ margin: 0 }}>Password</label>
+                <Link to="/forgot-password" style={{ fontSize: '0.78rem', color: 'var(--secondary)', fontWeight: 600, textDecoration: 'none' }}>
+                  Forgot password?
+                </Link>
+              </div>
               <div style={{ position:'relative' }}>
                 <Lock size={15} style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', color:'var(--n-400)', pointerEvents:'none' }}/>
                 <input type={showPw ? 'text' : 'password'} value={form.password}

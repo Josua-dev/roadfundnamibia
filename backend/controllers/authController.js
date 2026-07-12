@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const pool = require('../config/database');
 const { auditLog } = require('../utils/auditLog');
-const { sendVerificationEmail } = require('../utils/email');
+const { sendVerificationEmail, sendPasswordResetEmail } = require('../utils/email');
 const { setAuthCookie, clearAuthCookie } = require('../utils/authCookie');
 
 const VERIFICATION_MAX_ATTEMPTS = 5;
@@ -273,6 +273,101 @@ exports.updateProfile = async (req, res) => {
     res.json({ success: true, message: 'Profile updated', user: updated.rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Update failed' });
+  }
+};
+
+// ── FORGOT PASSWORD ───────────────────────────────────────────
+exports.forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  // Always return the same response to prevent email enumeration
+  const genericResponse = { success: true, message: 'If an account with that email exists, a reset link has been sent.' };
+
+  try {
+    const userResult = await pool.query(
+      'SELECT id, full_name, email_verified FROM users WHERE email = $1',
+      [email]
+    );
+    if (!userResult.rows.length) return res.json(genericResponse);
+    const user = userResult.rows[0];
+
+    // Don't send reset links to unverified accounts
+    if (!user.email_verified) return res.json(genericResponse);
+
+    // Rate-limit: only one reset email per 5 minutes
+    const recent = await pool.query(
+      "SELECT created_at FROM password_reset_tokens WHERE user_id = $1 AND created_at > NOW() - INTERVAL '5 minutes' LIMIT 1",
+      [user.id]
+    );
+    if (recent.rows.length) {
+      return res.status(429).json({ success: false, message: 'A reset link was recently sent. Please wait a few minutes before trying again.' });
+    }
+
+    // Invalidate any existing tokens for this user
+    await pool.query('DELETE FROM password_reset_tokens WHERE user_id = $1', [user.id]);
+
+    // Generate a secure token
+    const crypto = require('crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    await pool.query(
+      "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, NOW() + INTERVAL '30 minutes')",
+      [user.id, tokenHash]
+    );
+
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
+
+    try {
+      await sendPasswordResetEmail(email, user.full_name, resetUrl);
+    } catch (err) {
+      console.error('Failed to send password reset email:', err.message);
+    }
+
+    await auditLog(user.id, 'FORGOT_PASSWORD', 'users', user.id, req.ip);
+    res.json(genericResponse);
+  } catch (error) {
+    console.error('forgotPassword error:', error);
+    res.status(500).json({ success: false, message: 'Failed to process request' });
+  }
+};
+
+// ── RESET PASSWORD ────────────────────────────────────────────
+exports.resetPassword = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
+  const { email, token, new_password } = req.body;
+
+  try {
+    const crypto = require('crypto');
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    const userResult = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (!userResult.rows.length) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired reset link.' });
+    }
+    const user = userResult.rows[0];
+
+    const tokenResult = await pool.query(
+      'SELECT id FROM password_reset_tokens WHERE user_id = $1 AND token_hash = $2 AND expires_at > NOW()',
+      [user.id, tokenHash]
+    );
+    if (!tokenResult.rows.length) {
+      return res.status(400).json({ success: false, message: 'This reset link is invalid or has expired. Please request a new one.' });
+    }
+
+    const salt = await bcrypt.genSalt(12);
+    const password_hash = await bcrypt.hash(new_password, salt);
+
+    await pool.query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2', [password_hash, user.id]);
+    await pool.query('DELETE FROM password_reset_tokens WHERE user_id = $1', [user.id]);
+    await auditLog(user.id, 'RESET_PASSWORD', 'users', user.id, req.ip);
+
+    res.json({ success: true, message: 'Password reset successfully. You can now log in with your new password.' });
+  } catch (error) {
+    console.error('resetPassword error:', error);
+    res.status(500).json({ success: false, message: 'Password reset failed' });
   }
 };
 

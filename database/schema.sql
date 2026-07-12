@@ -223,3 +223,16 @@ CREATE TABLE IF NOT EXISTS report_sequences (
   last_seq INTEGER  NOT NULL DEFAULT 0,
   PRIMARY KEY (year)
 );
+
+-- ============================================================
+-- PASSWORD RESET TOKENS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id         SERIAL PRIMARY KEY,
+  user_id    INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash VARCHAR(64) NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_password_reset_tokens_user ON password_reset_tokens (user_id);

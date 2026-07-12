@@ -32,6 +32,16 @@ router.put('/change-password', authenticateToken, [
   body('current_password').notEmpty().withMessage('Current password is required'),
   passwordStrength('new_password'),
 ], ctrl.changePassword);
+router.post('/forgot-password', [
+  body('email').isEmail().withMessage('Valid email required'),
+], ctrl.forgotPassword);
+
+router.post('/reset-password', [
+  body('email').isEmail().withMessage('Valid email required'),
+  body('token').notEmpty().withMessage('Reset token is required'),
+  passwordStrength('new_password'),
+], ctrl.resetPassword);
+
 router.post('/logout', ctrl.logout);
 
 module.exports = router;

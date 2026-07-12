@@ -66,4 +66,33 @@ async function sendNotificationEmail(to, fullName, title, message, reportId) {
   });
 }
 
-module.exports = { sendVerificationEmail, sendNotificationEmail };
+/**
+ * Sends a password reset link by email.
+ * Falls back to console log when RESEND_API_KEY is not configured.
+ */
+async function sendPasswordResetEmail(to, fullName, resetUrl) {
+  if (!resend) {
+    console.warn(`[email] RESEND_API_KEY not set — password reset link for ${to}: ${resetUrl}`);
+    return;
+  }
+
+  await resend.emails.send({
+    from: process.env.EMAIL_FROM || 'RoadSafe Namibia <onboarding@resend.dev>',
+    to,
+    subject: 'Reset your RoadSafe Namibia password',
+    html: `
+      <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+        <h2 style="color: #15803d; margin-bottom: 4px;">RoadSafe Namibia</h2>
+        <p style="color: #555;">Hi ${fullName || 'there'},</p>
+        <p style="color: #555;">We received a request to reset your password. Click the button below to choose a new one. This link expires in 30 minutes.</p>
+        <a href="${resetUrl}" style="display:inline-block; margin: 20px 0; background:#28384A; color:white; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:600; font-size:15px;">
+          Reset My Password
+        </a>
+        <p style="color: #888; font-size: 13px;">If you didn't request a password reset, you can safely ignore this email. Your password will not change.</p>
+        <p style="color: #bbb; font-size: 12px; word-break: break-all;">Or copy this link: ${resetUrl}</p>
+      </div>
+    `,
+  });
+}
+
+module.exports = { sendVerificationEmail, sendNotificationEmail, sendPasswordResetEmail };
