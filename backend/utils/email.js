@@ -17,7 +17,7 @@ async function sendVerificationEmail(to, fullName, code) {
     return;
   }
 
-  await resend.emails.send({
+  const { error } = await resend.emails.send({
     from: process.env.EMAIL_FROM || 'RoadSafe Namibia <onboarding@resend.dev>',
     to,
     subject: 'Verify your RoadSafe Namibia account',
@@ -33,6 +33,15 @@ async function sendVerificationEmail(to, fullName, code) {
       </div>
     `,
   });
+
+  // The Resend SDK does NOT throw on API-level failures (bad/unverified
+  // "from" domain, sandbox-domain recipient restriction, rate limits,
+  // etc.) -- it resolves normally with { data, error }. Without this
+  // check, a rejected send looks identical to a successful one to
+  // every caller, including issueVerificationCode's try/catch.
+  if (error) {
+    throw new Error(error.message || 'Resend rejected the verification email');
+  }
 }
 
 /**
@@ -50,7 +59,7 @@ async function sendNotificationEmail(to, fullName, title, message, reportId) {
     ? `${process.env.FRONTEND_URL}/dashboard/reports/${reportId}`
     : null;
 
-  await resend.emails.send({
+  const { error } = await resend.emails.send({
     from: process.env.EMAIL_FROM || 'RoadSafe Namibia <onboarding@resend.dev>',
     to,
     subject: title,
@@ -64,6 +73,10 @@ async function sendNotificationEmail(to, fullName, title, message, reportId) {
       </div>
     `,
   });
+
+  if (error) {
+    throw new Error(error.message || 'Resend rejected the notification email');
+  }
 }
 
 /**
@@ -76,7 +89,7 @@ async function sendPasswordResetEmail(to, fullName, resetUrl) {
     return;
   }
 
-  await resend.emails.send({
+  const { error } = await resend.emails.send({
     from: process.env.EMAIL_FROM || 'RoadSafe Namibia <onboarding@resend.dev>',
     to,
     subject: 'Reset your RoadSafe Namibia password',
@@ -93,6 +106,10 @@ async function sendPasswordResetEmail(to, fullName, resetUrl) {
       </div>
     `,
   });
+
+  if (error) {
+    throw new Error(error.message || 'Resend rejected the password reset email');
+  }
 }
 
 module.exports = { sendVerificationEmail, sendNotificationEmail, sendPasswordResetEmail };
