@@ -1,24 +1,34 @@
-let resend = null;
-if (process.env.RESEND_API_KEY) {
-  const { Resend } = require('resend');
-  resend = new Resend(process.env.RESEND_API_KEY);
+const nodemailer = require('nodemailer');
+
+let transporter = null;
+
+if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+  transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  });
 }
+
+const FROM = process.env.EMAIL_FROM || process.env.GMAIL_USER || 'RoadSafe Namibia <noreply@gmail.com>';
 
 /**
  * Sends a 6-digit verification code by email.
  *
- * If RESEND_API_KEY isn't set (e.g. local dev without it configured),
- * this logs the code to the console instead of throwing -- so the rest
- * of the signup flow is still testable without a real email account.
+ * If GMAIL_USER / GMAIL_APP_PASSWORD aren't set (local dev without email
+ * configured), this logs the code to the console instead of throwing — so
+ * the rest of the signup flow is still testable.
  */
 async function sendVerificationEmail(to, fullName, code) {
-  if (!resend) {
-    console.warn(`[email] RESEND_API_KEY not set — verification code for ${to}: ${code}`);
+  if (!transporter) {
+    console.warn(`[email] GMAIL_USER/GMAIL_APP_PASSWORD not set — verification code for ${to}: ${code}`);
     return;
   }
 
-  const { error } = await resend.emails.send({
-    from: process.env.EMAIL_FROM || 'RoadSafe Namibia <onboarding@resend.dev>',
+  await transporter.sendMail({
+    from: FROM,
     to,
     subject: 'Verify your RoadSafe Namibia account',
     html: `
@@ -33,25 +43,14 @@ async function sendVerificationEmail(to, fullName, code) {
       </div>
     `,
   });
-
-  // The Resend SDK does NOT throw on API-level failures (bad/unverified
-  // "from" domain, sandbox-domain recipient restriction, rate limits,
-  // etc.) -- it resolves normally with { data, error }. Without this
-  // check, a rejected send looks identical to a successful one to
-  // every caller, including issueVerificationCode's try/catch.
-  if (error) {
-    throw new Error(error.message || 'Resend rejected the verification email');
-  }
 }
 
 /**
- * Sends a general notification email (status changes, assignments,
- * etc.) -- distinct from sendVerificationEmail, which is OTP-specific.
- * Same no-op-with-console-log fallback when Resend isn't configured.
+ * Sends a general notification email (status changes, assignments, etc.)
  */
 async function sendNotificationEmail(to, fullName, title, message, reportId) {
-  if (!resend) {
-    console.warn(`[email] RESEND_API_KEY not set — notification for ${to}: ${title} — ${message}`);
+  if (!transporter) {
+    console.warn(`[email] GMAIL_USER/GMAIL_APP_PASSWORD not set — notification for ${to}: ${title} — ${message}`);
     return;
   }
 
@@ -59,8 +58,8 @@ async function sendNotificationEmail(to, fullName, title, message, reportId) {
     ? `${process.env.FRONTEND_URL}/dashboard/reports/${reportId}`
     : null;
 
-  const { error } = await resend.emails.send({
-    from: process.env.EMAIL_FROM || 'RoadSafe Namibia <onboarding@resend.dev>',
+  await transporter.sendMail({
+    from: FROM,
     to,
     subject: title,
     html: `
@@ -73,24 +72,19 @@ async function sendNotificationEmail(to, fullName, title, message, reportId) {
       </div>
     `,
   });
-
-  if (error) {
-    throw new Error(error.message || 'Resend rejected the notification email');
-  }
 }
 
 /**
  * Sends a password reset link by email.
- * Falls back to console log when RESEND_API_KEY is not configured.
  */
 async function sendPasswordResetEmail(to, fullName, resetUrl) {
-  if (!resend) {
-    console.warn(`[email] RESEND_API_KEY not set — password reset link for ${to}: ${resetUrl}`);
+  if (!transporter) {
+    console.warn(`[email] GMAIL_USER/GMAIL_APP_PASSWORD not set — password reset link for ${to}: ${resetUrl}`);
     return;
   }
 
-  const { error } = await resend.emails.send({
-    from: process.env.EMAIL_FROM || 'RoadSafe Namibia <onboarding@resend.dev>',
+  await transporter.sendMail({
+    from: FROM,
     to,
     subject: 'Reset your RoadSafe Namibia password',
     html: `
@@ -106,10 +100,6 @@ async function sendPasswordResetEmail(to, fullName, resetUrl) {
       </div>
     `,
   });
-
-  if (error) {
-    throw new Error(error.message || 'Resend rejected the password reset email');
-  }
 }
 
 module.exports = { sendVerificationEmail, sendNotificationEmail, sendPasswordResetEmail };
