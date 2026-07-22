@@ -20,6 +20,18 @@ const publicRoutes       = require('./routes/public');
 
 const app = express();
 
+// Render (and most other hosting providers) terminate TLS at their
+// load balancer and forward the request to the app over HTTP, adding
+// the original client IP in the X-Forwarded-For header. Without this
+// setting, express-rate-limit sees the load balancer's internal IP as
+// the client address -- so everyone on the internet shares the same
+// rate-limit bucket, and the library also emits the
+// ERR_ERL_UNEXPECTED_X_FORWARDED_FOR warning you saw in the logs.
+// Setting trust proxy to 1 tells Express to trust the first proxy in
+// the chain (Render's load balancer) and read the real IP from the
+// X-Forwarded-For header.
+app.set('trust proxy', 1);
+
 // ── Security headers (helmet) ────────────────────────────────
 // This CSP now also governs the frontend's own HTML (see the static
 // serving block near the bottom of this file) -- previously it only
