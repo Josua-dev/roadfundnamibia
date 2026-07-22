@@ -20,6 +20,11 @@ const generateToken = (userId) =>
 // exists either way, and the user can always request a resend.
 const issueVerificationCode = async (userId, email, fullName) => {
   const code = String(Math.floor(100000 + Math.random() * 900000));
+  // Invalidate any previous codes for this user first -- otherwise every
+  // register/resend call just piles up another row, and old codes for
+  // the same user technically stay "valid" (per expires_at) until they
+  // age out on their own.
+  await pool.query('DELETE FROM email_verifications WHERE user_id = $1', [userId]);
   await pool.query(
     "INSERT INTO email_verifications (user_id, code, expires_at) VALUES ($1, $2, NOW() + INTERVAL '10 minutes')",
     [userId, code]
@@ -42,9 +47,21 @@ exports.register = async (req, res) => {
 
   try {
     // Check if email taken
-    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    const existing = await pool.query('SELECT id, email_verified FROM users WHERE email = $1', [email]);
     if (existing.rows.length) {
-      return res.status(409).json({ success: false, message: 'Email already registered' });
+      if (!existing.rows[0].email_verified) {
+        // An account exists but was never verified -- previously this was
+        // a dead end: the user would see "already registered" with no way
+        // back to the account they already have. Route them into the
+        // same verify flow login uses for this exact situation instead.
+        return res.status(403).json({
+          success: false,
+          requiresVerification: true,
+          email,
+          message: 'This email already has an account pending verification. Enter your code, or resend a new one.',
+        });
+      }
+      return res.status(409).json({ success: false, message: 'This email is already registered. Try logging in instead.' });
     }
 
     // Hash password

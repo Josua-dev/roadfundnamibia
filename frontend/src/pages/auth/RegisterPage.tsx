@@ -39,6 +39,11 @@ export default function RegisterPage() {
       toast.success('Account created — check your email for a verification code.');
       navigate(`/verify-email?email=${encodeURIComponent(form.email)}`);
     } catch (err: any) {
+      if (err.response?.data?.requiresVerification) {
+        toast('Please verify your email to continue', { icon: '📧' });
+        navigate(`/verify-email?email=${encodeURIComponent(err.response.data.email)}`);
+        return;
+      }
       setError(err.response?.data?.message || err.response?.data?.errors?.[0]?.msg || 'Registration failed. Please try again.');
     } finally { setLoading(false); }
   };
