@@ -12,6 +12,10 @@ export default function VerifyEmailPage() {
   const { setSession } = useAuth();
   const [searchParams] = useSearchParams();
   const email = searchParams.get('email') || '';
+  // Register sets ?sent=0 when the verification email failed to send, so
+  // this page can tell the user why they have no code instead of leaving
+  // them guessing.
+  const emailFailed = searchParams.get('sent') === '0';
 
   const [digits, setDigits] = useState<string[]>(Array(6).fill(''));
   const [loading, setLoading] = useState(false);
@@ -98,6 +102,13 @@ export default function VerifyEmailPage() {
         <p style={{ color: 'var(--text-2)', fontSize: '0.875rem', margin: '0 0 28px', lineHeight: 1.6 }}>
           We sent a 6-digit code to <strong>{email || 'your email address'}</strong>. Enter it below — it expires in 10 minutes.
         </p>
+
+        {emailFailed && !error && (
+          <div className="notice notice-warning" style={{ marginBottom: 18 }}>
+            <AlertCircle size={15} style={{ flexShrink: 0 }} />
+            We couldn't send the verification email — the server's email service isn't configured. Please contact the site administrator, or try the resend button below.
+          </div>
+        )}
 
         {error && (
           <div className="notice notice-error" style={{ marginBottom: 18 }}>

@@ -35,7 +35,12 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setError(''); setLoading(true);
     try {
-      await api.post('/auth/register', form);
+      const { data } = await api.post('/auth/register', form);
+      if (data?.data?.emailSent === false) {
+        toast('Account created, but the verification email could not be sent. Please contact support or try resending.', { icon: '⚠️' });
+        navigate(`/verify-email?email=${encodeURIComponent(form.email)}&sent=0`);
+        return;
+      }
       toast.success('Account created — check your email for a verification code.');
       navigate(`/verify-email?email=${encodeURIComponent(form.email)}`);
     } catch (err: any) {

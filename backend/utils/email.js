@@ -10,6 +10,15 @@ if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
       pass: process.env.GMAIL_APP_PASSWORD,
     },
   });
+} else {
+  // Loud at startup, not buried in a per-request console.warn. Email is the
+  // thing that's silently broken right now, so surface it as clearly as
+  // possible rather than letting users sign up and never get a code.
+  console.warn(
+    '[email] ⚠️  Gmail SMTP NOT CONFIGURED — set both GMAIL_USER and GMAIL_APP_PASSWORD.\n' +
+      '[email]    (App Password from https://myaccount.google.com/apppasswords, requires 2FA.)\n' +
+      '[email]    Verification codes and notification emails will be logged to console and NOT delivered.'
+  );
 }
 
 const FROM = process.env.EMAIL_FROM || process.env.GMAIL_USER || 'RoadSafe Namibia <noreply@gmail.com>';
@@ -17,14 +26,17 @@ const FROM = process.env.EMAIL_FROM || process.env.GMAIL_USER || 'RoadSafe Namib
 /**
  * Sends a 6-digit verification code by email.
  *
- * If GMAIL_USER / GMAIL_APP_PASSWORD aren't set (local dev without email
- * configured), this logs the code to the console instead of throwing — so
- * the rest of the signup flow is still testable.
+ * If GMAIL_USER / GMAIL_APP_PASSWORD aren't set, this logs the code to the
+ * console (so local dev remains testable) AND throws — callers must not
+ * mistake "no email was sent" for success.
  */
 async function sendVerificationEmail(to, fullName, code) {
   if (!transporter) {
-    console.warn(`[email] GMAIL_USER/GMAIL_APP_PASSWORD not set — verification code for ${to}: ${code}`);
-    return;
+    // Kept as a hard throw (not a silent return) so callers can't mistake
+    // "no email was sent" for success. The code is still logged here so
+    // local/dev flows remain testable without real SMTP credentials.
+    console.warn(`[email] Gmail not configured — verification code for ${to}: ${code} (NOT emailed)`);
+    throw new Error('Email not sent: GMAIL_USER / GMAIL_APP_PASSWORD are not both set');
   }
 
   await transporter.sendMail({
@@ -50,8 +62,8 @@ async function sendVerificationEmail(to, fullName, code) {
  */
 async function sendNotificationEmail(to, fullName, title, message, reportId) {
   if (!transporter) {
-    console.warn(`[email] GMAIL_USER/GMAIL_APP_PASSWORD not set — notification for ${to}: ${title} — ${message}`);
-    return;
+    console.warn(`[email] Gmail not configured — notification for ${to}: ${title} (NOT emailed)`);
+    throw new Error('Email not sent: GMAIL_USER / GMAIL_APP_PASSWORD are not both set');
   }
 
   const ctaUrl = reportId && process.env.FRONTEND_URL
@@ -79,8 +91,8 @@ async function sendNotificationEmail(to, fullName, title, message, reportId) {
  */
 async function sendPasswordResetEmail(to, fullName, resetUrl) {
   if (!transporter) {
-    console.warn(`[email] GMAIL_USER/GMAIL_APP_PASSWORD not set — password reset link for ${to}: ${resetUrl}`);
-    return;
+    console.warn(`[email] Gmail not configured — password reset link for ${to}: ${resetUrl} (NOT emailed)`);
+    throw new Error('Email not sent: GMAIL_USER / GMAIL_APP_PASSWORD are not both set');
   }
 
   await transporter.sendMail({

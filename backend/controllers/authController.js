@@ -31,8 +31,10 @@ const issueVerificationCode = async (userId, email, fullName) => {
   );
   try {
     await sendVerificationEmail(email, fullName, code);
+    return true;
   } catch (error) {
     console.error('Failed to send verification email:', error.message);
+    return false;
   }
 };
 
@@ -78,15 +80,17 @@ exports.register = async (req, res) => {
 
     const userId = result.rows[0].id;
     await auditLog(userId, 'REGISTER', 'users', userId, req.ip);
-    await issueVerificationCode(userId, email, full_name);
+    const emailSent = await issueVerificationCode(userId, email, full_name);
 
     // No token here -- the account isn't usable until the code is
     // verified. The frontend should route straight to the
     // verify-email screen with this email pre-filled.
     res.status(201).json({
       success: true,
-      message: 'Account created. Check your email for a 6-digit verification code.',
-      data: { email, requiresVerification: true },
+      message: emailSent
+        ? 'Account created. Check your email for a 6-digit verification code.'
+        : 'Account created, but the verification email could not be sent. Please check the server email configuration or try resending.',
+      data: { email, requiresVerification: true, emailSent },
     });
   } catch (error) {
     console.error('Register error:', error);
