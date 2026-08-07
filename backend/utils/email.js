@@ -2,6 +2,14 @@ const nodemailer = require('nodemailer');
 
 let transporter = null;
 
+// Hard timeouts so a stalled SMTP connection (e.g. Render's free tier
+// often can't reach Gmail's outbound ports) fails fast instead of hanging
+// the request indefinitely. Without these, sendMail waits on a socket that
+// never connects and the register/verify flow blocks forever with no
+// response. sendMailTimeoutMs is a belt-and-braces cap on the whole call.
+const SMTP_CONNECT_TIMEOUT_MS = 5000;
+const SENDMAIL_TIMEOUT_MS = 12000;
+
 if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
   transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -9,6 +17,9 @@ if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
       user: process.env.GMAIL_USER,
       pass: process.env.GMAIL_APP_PASSWORD,
     },
+    connectionTimeout: SMTP_CONNECT_TIMEOUT_MS,
+    greetingTimeout: SMTP_CONNECT_TIMEOUT_MS,
+    socketTimeout: SENDMAIL_TIMEOUT_MS,
   });
 } else {
   // Loud at startup, not buried in a per-request console.warn. Email is the
@@ -22,6 +33,29 @@ if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
 }
 
 const FROM = process.env.EMAIL_FROM || process.env.GMAIL_USER || 'RoadSafe Namibia <noreply@gmail.com>';
+
+/**
+ * Sends mail with a hard ceiling on total time. Even with the
+ * transporter's socketTimeout, some failures (DNS, TLS, hung sockets)
+ * can outlive a single read timeout, so we race the send against a
+ * deadline too. On timeout the SMTP connection is closed so it can't
+ * keep the process alive.
+ */
+async function sendMailWithTimeout(mailOptions) {
+  if (!transporter) {
+    throw new Error('Email not sent: GMAIL_USER / GMAIL_APP_PASSWORD are not both set');
+  }
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      transporter.close();
+      reject(new Error('Email send timed out (SMTP unreachable)'));
+    }, SENDMAIL_TIMEOUT_MS);
+    transporter.sendMail(mailOptions).then(
+      (info) => { clearTimeout(timer); resolve(info); },
+      (err) => { clearTimeout(timer); reject(err); }
+    );
+  });
+}
 
 /**
  * Sends a 6-digit verification code by email.
@@ -39,7 +73,7 @@ async function sendVerificationEmail(to, fullName, code) {
     throw new Error('Email not sent: GMAIL_USER / GMAIL_APP_PASSWORD are not both set');
   }
 
-  await transporter.sendMail({
+  await sendMailWithTimeout({
     from: FROM,
     to,
     subject: 'Verify your RoadSafe Namibia account',
@@ -70,7 +104,7 @@ async function sendNotificationEmail(to, fullName, title, message, reportId) {
     ? `${process.env.FRONTEND_URL}/dashboard/reports/${reportId}`
     : null;
 
-  await transporter.sendMail({
+  await sendMailWithTimeout({
     from: FROM,
     to,
     subject: title,
@@ -95,7 +129,7 @@ async function sendPasswordResetEmail(to, fullName, resetUrl) {
     throw new Error('Email not sent: GMAIL_USER / GMAIL_APP_PASSWORD are not both set');
   }
 
-  await transporter.sendMail({
+  await sendMailWithTimeout({
     from: FROM,
     to,
     subject: 'Reset your RoadSafe Namibia password',
