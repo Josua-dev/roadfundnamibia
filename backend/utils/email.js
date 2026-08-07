@@ -1,55 +1,87 @@
+/**
+ * Transactional email delivery.
+ *
+ * Two paths, chosen automatically:
+ *   1. RESEND_API_KEY set      -> Resend's HTTP API (https://api.resend.com/emails).
+ *      This is the production path. It goes out over HTTPS/port 443, which
+ *      Render's free tier DOES allow — unlike outbound SMTP (port 465/587),
+ *      which Render free blocks and which made Gmail's App Password stall.
+ *   2. GMAIL_USER + GMAIL_APP_PASSWORD set -> Gmail SMTP. Kept as a local/dev
+ *      fallback, since that still works from a normal (non-Render) machine.
+ *
+ * Both paths are wrapped in hard timeouts so a stalled connection fails fast
+ * (surfaces `emailSent:false` to the caller) instead of hanging the
+ * register/verify request indefinitely.
+ */
 const nodemailer = require('nodemailer');
 
-let transporter = null;
+const RESEND_URL = 'https://api.resend.com/emails';
+const SEND_TIMEOUT_MS = 12000;
 
-// Hard timeouts so a stalled SMTP connection (e.g. Render's free tier
-// often can't reach Gmail's outbound ports) fails fast instead of hanging
-// the request indefinitely. Without these, sendMail waits on a socket that
-// never connects and the register/verify flow blocks forever with no
-// response. sendMailTimeoutMs is a belt-and-braces cap on the whole call.
-const SMTP_CONNECT_TIMEOUT_MS = 5000;
-const SENDMAIL_TIMEOUT_MS = 12000;
+// ---------------------------------------------------------------------------
+// Transport selection
+// ---------------------------------------------------------------------------
 
-if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
-  transporter = nodemailer.createTransport({
+function hasResend() {
+  return Boolean(process.env.RESEND_API_KEY);
+}
+
+function gmailTransporter() {
+  if (!(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD)) return null;
+  return nodemailer.createTransport({
     service: 'gmail',
     auth: {
       user: process.env.GMAIL_USER,
       pass: process.env.GMAIL_APP_PASSWORD,
     },
-    connectionTimeout: SMTP_CONNECT_TIMEOUT_MS,
-    greetingTimeout: SMTP_CONNECT_TIMEOUT_MS,
-    socketTimeout: SENDMAIL_TIMEOUT_MS,
+    connectionTimeout: 5000,
+    greetingTimeout: 5000,
+    socketTimeout: SEND_TIMEOUT_MS,
   });
-} else {
-  // Loud at startup, not buried in a per-request console.warn. Email is the
-  // thing that's silently broken right now, so surface it as clearly as
-  // possible rather than letting users sign up and never get a code.
+}
+
+if (!hasResend() && !gmailTransporter()) {
   console.warn(
-    '[email] ⚠️  Gmail SMTP NOT CONFIGURED — set both GMAIL_USER and GMAIL_APP_PASSWORD.\n' +
-      '[email]    (App Password from https://myaccount.google.com/apppasswords, requires 2FA.)\n' +
-      '[email]    Verification codes and notification emails will be logged to console and NOT delivered.'
+    '[email] ⚠️  NO EMAIL PROVIDER CONFIGURED — set RESEND_API_KEY (production, works on Render) ' +
+      'or GMAIL_USER + GMAIL_APP_PASSWORD (local dev).\n' +
+      '[email]    Verification codes will be logged to console and NOT delivered.'
   );
 }
 
-const FROM = process.env.EMAIL_FROM || process.env.GMAIL_USER || 'RoadSafe Namibia <noreply@gmail.com>';
+// ---------------------------------------------------------------------------
+// Send helpers
+// ---------------------------------------------------------------------------
 
-/**
- * Sends mail with a hard ceiling on total time. Even with the
- * transporter's socketTimeout, some failures (DNS, TLS, hung sockets)
- * can outlive a single read timeout, so we race the send against a
- * deadline too. On timeout the SMTP connection is closed so it can't
- * keep the process alive.
- */
-async function sendMailWithTimeout(mailOptions) {
-  if (!transporter) {
-    throw new Error('Email not sent: GMAIL_USER / GMAIL_APP_PASSWORD are not both set');
+/** Send via Resend's HTTPS API. Throws on non-2xx or timeout. */
+async function sendViaResend({ from, to, subject, html }) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), SEND_TIMEOUT_MS);
+  try {
+    const res = await fetch(RESEND_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ from, to, subject, html }),
+      signal: controller.signal,
+    });
+    const body = await res.text();
+    if (!res.ok) throw new Error(`Resend error ${res.status}: ${body}`);
+  } finally {
+    clearTimeout(timer);
   }
+}
+
+/** Send via GmailSMTP, raced against a deadline so a hung socket can't block. */
+async function sendGmail(mailOptions) {
+  const transporter = gmailTransporter();
+  if (!transporter) throw new Error('Gmail not configured');
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       transporter.close();
       reject(new Error('Email send timed out (SMTP unreachable)'));
-    }, SENDMAIL_TIMEOUT_MS);
+    }, SEND_TIMEOUT_MS);
     transporter.sendMail(mailOptions).then(
       (info) => { clearTimeout(timer); resolve(info); },
       (err) => { clearTimeout(timer); reject(err); }
@@ -57,24 +89,31 @@ async function sendMailWithTimeout(mailOptions) {
   });
 }
 
+/** The one dispatch point the three functions below call. */
+async function deliver(mailOptions) {
+  if (hasResend()) return sendViaResend(mailOptions);
+  try {
+    return await sendGmail(mailOptions);
+  } catch (error) {
+    // Local dev / unconfigured: log the body so the flow stays testable
+    // without a working sender, but still throw so callers know it wasn't sent.
+    console.warn(`[email] NOT sent (${error.message}). To: ${mailOptions.to}`);
+    console.warn(`[email] subject: ${mailOptions.subject}`);
+    throw error;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Message builders & exported senders
+// ---------------------------------------------------------------------------
+
+const FROM = process.env.EMAIL_FROM || 'RoadSafe Namibia <onboarding@resend.dev>';
+
 /**
- * Sends a 6-digit verification code by email.
- *
- * If GMAIL_USER / GMAIL_APP_PASSWORD aren't set, this logs the code to the
- * console (so local dev remains testable) AND throws — callers must not
- * mistake "no email was sent" for success.
+ * Sends a 6-digit verification code.
  */
 async function sendVerificationEmail(to, fullName, code) {
-  if (!transporter) {
-    // Kept as a hard throw (not a silent return) so callers can't mistake
-    // "no email was sent" for success. The code is still logged here so
-    // local/dev flows remain testable without real SMTP credentials.
-    console.warn(`[email] Gmail not configured — verification code for ${to}: ${code} (NOT emailed)`);
-    throw new Error('Email not sent: GMAIL_USER / GMAIL_APP_PASSWORD are not both set');
-  }
-
-  await sendMailWithTimeout({
-    from: FROM,
+  await deliver({
     to,
     subject: 'Verify your RoadSafe Namibia account',
     html: `
@@ -95,17 +134,11 @@ async function sendVerificationEmail(to, fullName, code) {
  * Sends a general notification email (status changes, assignments, etc.)
  */
 async function sendNotificationEmail(to, fullName, title, message, reportId) {
-  if (!transporter) {
-    console.warn(`[email] Gmail not configured — notification for ${to}: ${title} (NOT emailed)`);
-    throw new Error('Email not sent: GMAIL_USER / GMAIL_APP_PASSWORD are not both set');
-  }
-
   const ctaUrl = reportId && process.env.FRONTEND_URL
     ? `${process.env.FRONTEND_URL}/dashboard/reports/${reportId}`
     : null;
 
-  await sendMailWithTimeout({
-    from: FROM,
+  await deliver({
     to,
     subject: title,
     html: `
@@ -121,16 +154,10 @@ async function sendNotificationEmail(to, fullName, title, message, reportId) {
 }
 
 /**
- * Sends a password reset link by email.
+ * Sends a password reset link.
  */
 async function sendPasswordResetEmail(to, fullName, resetUrl) {
-  if (!transporter) {
-    console.warn(`[email] Gmail not configured — password reset link for ${to}: ${resetUrl} (NOT emailed)`);
-    throw new Error('Email not sent: GMAIL_USER / GMAIL_APP_PASSWORD are not both set');
-  }
-
-  await sendMailWithTimeout({
-    from: FROM,
+  await deliver({
     to,
     subject: 'Reset your RoadSafe Namibia password',
     html: `
